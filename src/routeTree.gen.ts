@@ -15,6 +15,8 @@ import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppRegistroRouteImport } from './routes/_app.registro'
 import { Route as AppInicioRouteImport } from './routes/_app.inicio'
+import { Route as AppDeudoresIndexRouteImport } from './routes/_app.deudores.index'
+import { Route as AppDeudoresClienteIdRouteImport } from './routes/_app.deudores.$clienteId'
 
 const PinRoute = PinRouteImport.update({
   id: '/pin',
@@ -45,6 +47,16 @@ const AppInicioRoute = AppInicioRouteImport.update({
   path: '/inicio',
   getParentRoute: () => AppRoute,
 } as any)
+const AppDeudoresIndexRoute = AppDeudoresIndexRouteImport.update({
+  id: '/deudores/',
+  path: '/deudores/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppDeudoresClienteIdRoute = AppDeudoresClienteIdRouteImport.update({
+  id: '/deudores/$clienteId',
+  path: '/deudores/$clienteId',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -52,6 +64,8 @@ export interface FileRoutesByFullPath {
   '/pin': typeof PinRoute
   '/inicio': typeof AppInicioRoute
   '/registro': typeof AppRegistroRoute
+  '/deudores/$clienteId': typeof AppDeudoresClienteIdRoute
+  '/deudores/': typeof AppDeudoresIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -59,6 +73,8 @@ export interface FileRoutesByTo {
   '/pin': typeof PinRoute
   '/inicio': typeof AppInicioRoute
   '/registro': typeof AppRegistroRoute
+  '/deudores/$clienteId': typeof AppDeudoresClienteIdRoute
+  '/deudores': typeof AppDeudoresIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -68,12 +84,28 @@ export interface FileRoutesById {
   '/pin': typeof PinRoute
   '/_app/inicio': typeof AppInicioRoute
   '/_app/registro': typeof AppRegistroRoute
+  '/_app/deudores/$clienteId': typeof AppDeudoresClienteIdRoute
+  '/_app/deudores/': typeof AppDeudoresIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/pin' | '/inicio' | '/registro'
+  fullPaths:
+    | '/'
+    | '/login'
+    | '/pin'
+    | '/inicio'
+    | '/registro'
+    | '/deudores/$clienteId'
+    | '/deudores/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/pin' | '/inicio' | '/registro'
+  to:
+    | '/'
+    | '/login'
+    | '/pin'
+    | '/inicio'
+    | '/registro'
+    | '/deudores/$clienteId'
+    | '/deudores'
   id:
     | '__root__'
     | '/'
@@ -82,6 +114,8 @@ export interface FileRouteTypes {
     | '/pin'
     | '/_app/inicio'
     | '/_app/registro'
+    | '/_app/deudores/$clienteId'
+    | '/_app/deudores/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -135,17 +169,35 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppInicioRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/deudores/': {
+      id: '/_app/deudores/'
+      path: '/deudores'
+      fullPath: '/deudores/'
+      preLoaderRoute: typeof AppDeudoresIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/deudores/$clienteId': {
+      id: '/_app/deudores/$clienteId'
+      path: '/deudores/$clienteId'
+      fullPath: '/deudores/$clienteId'
+      preLoaderRoute: typeof AppDeudoresClienteIdRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
 interface AppRouteChildren {
   AppInicioRoute: typeof AppInicioRoute
   AppRegistroRoute: typeof AppRegistroRoute
+  AppDeudoresClienteIdRoute: typeof AppDeudoresClienteIdRoute
+  AppDeudoresIndexRoute: typeof AppDeudoresIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
   AppInicioRoute: AppInicioRoute,
   AppRegistroRoute: AppRegistroRoute,
+  AppDeudoresClienteIdRoute: AppDeudoresClienteIdRoute,
+  AppDeudoresIndexRoute: AppDeudoresIndexRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)

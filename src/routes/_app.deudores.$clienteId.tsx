@@ -1,0 +1,167 @@
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { ArrowLeft } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import { useEmpleado } from "@/lib/empleado-store";
+import { formatCOP, cn } from "@/lib/utils";
+
+export const Route = createFileRoute("/_app/deudores/$clienteId")({
+  component: DetalleDeudor,
+});
+
+type Metodo = "efectivo" | "transferencia";
+
+function DetalleDeudor() {
+  const { clienteId } = Route.useParams();
+  const empleado = useEmpleado((s) => s.empleado)!;
+  const navigate = useNavigate();
+  const qc = useQueryClient();
+
+  const cliente = useQuery({
+    queryKey: ["cliente", clienteId],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("clientes").select("id,nombre,saldo_total").eq("id", clienteId).single();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const deudas = useQuery({
+    queryKey: ["deudas", clienteId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("deudas")
+        .select("id,producto_nombre,cantidad,precio_unitario,monto,estado,created_at")
+        .eq("cliente_id", clienteId)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const abonar = useMutation({
+    mutationFn: async ({ monto, metodo }: { monto: number; metodo: Metodo }) => {
+      const { error } = await supabase.rpc("aplicar_abono", {
+        p_cliente: clienteId, p_monto: monto, p_metodo: metodo, p_empleado: empleado.id,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Pago registrado");
+      qc.invalidateQueries({ queryKey: ["cliente", clienteId] });
+      qc.invalidateQueries({ queryKey: ["deudas", clienteId] });
+      qc.invalidateQueries({ queryKey: ["deudores"] });
+      qc.invalidateQueries({ queryKey: ["dashboard-hoy"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const saldo = Number(cliente.data?.saldo_total ?? 0);
+
+  return (
+    <div className="p-4 md:p-6 max-w-3xl mx-auto space-y-4">
+      <Button asChild variant="ghost" size="sm">
+        <Link to="/deudores"><ArrowLeft className="h-4 w-4 mr-1" /> Volver</Link>
+      </Button>
+
+      <Card className="p-5">
+        <p className="text-sm text-muted-foreground">Cliente</p>
+        <h2 className="text-2xl font-bold">{cliente.data?.nombre ?? "..."}</h2>
+        <p className="text-sm text-muted-foreground mt-2">Saldo total</p>
+        <p className={`text-3xl font-bold ${saldo > 0 ? "text-destructive" : "text-success"}`}>{formatCOP(saldo)}</p>
+        <div className="grid grid-cols-2 gap-2 mt-4">
+          <PagarTodoDialog saldo={saldo} onConfirm={(metodo) => abonar.mutate({ monto: saldo, metodo })} disabled={saldo <= 0 || abonar.isPending} />
+          <AbonarDialog saldo={saldo} onConfirm={(monto, metodo) => abonar.mutate({ monto, metodo })} disabled={saldo <= 0 || abonar.isPending} />
+        </div>
+      </Card>
+
+      <Card className="p-4">
+        <h3 className="font-semibold mb-3">Detalle de consumo</h3>
+        <div className="space-y-2">
+          {(deudas.data ?? []).map((d) => (
+            <div key={d.id} className={cn("flex items-center justify-between text-sm border-b pb-2 last:border-0", d.estado === "pagado" && "opacity-50 line-through")}>
+              <div>
+                <div className="font-medium">{d.producto_nombre} × {d.cantidad}</div>
+                <div className="text-xs text-muted-foreground">{new Date(d.created_at as string).toLocaleString("es-CO")}</div>
+              </div>
+              <div className="font-semibold">{formatCOP(Number(d.monto))}</div>
+            </div>
+          ))}
+          {deudas.data?.length === 0 && <p className="text-sm text-muted-foreground">Sin consumos</p>}
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+function PagarTodoDialog({ saldo, onConfirm, disabled }: { saldo: number; onConfirm: (m: Metodo) => void; disabled: boolean }) {
+  const [open, setOpen] = useState(false);
+  const [metodo, setMetodo] = useState<Metodo>("efectivo");
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button className="h-14 text-base bg-success hover:bg-success/90 text-success-foreground" disabled={disabled}>Pagar todo</Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader><DialogTitle>Pagar {formatCOP(saldo)}</DialogTitle></DialogHeader>
+        <div className="grid grid-cols-2 gap-2">
+          {(["efectivo","transferencia"] as Metodo[]).map((m) => (
+            <button key={m} onClick={() => setMetodo(m)} className={cn("h-12 rounded-lg border capitalize font-medium", metodo === m ? "bg-primary text-primary-foreground border-primary" : "")}>
+              {m}
+            </button>
+          ))}
+        </div>
+        <DialogFooter>
+          <Button onClick={() => { onConfirm(metodo); setOpen(false); }} className="w-full h-12">Confirmar pago</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function AbonarDialog({ saldo, onConfirm, disabled }: { saldo: number; onConfirm: (monto: number, m: Metodo) => void; disabled: boolean }) {
+  const [open, setOpen] = useState(false);
+  const [monto, setMonto] = useState("");
+  const [metodo, setMetodo] = useState<Metodo>("efectivo");
+  const valor = Number(monto);
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline" className="h-14 text-base" disabled={disabled}>Abonar</Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader><DialogTitle>Abonar (saldo {formatCOP(saldo)})</DialogTitle></DialogHeader>
+        <div className="space-y-3">
+          <div>
+            <Label>Monto</Label>
+            <Input type="number" inputMode="numeric" value={monto} onChange={(e) => setMonto(e.target.value)} className="h-12 text-lg" />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            {(["efectivo","transferencia"] as Metodo[]).map((m) => (
+              <button key={m} onClick={() => setMetodo(m)} className={cn("h-12 rounded-lg border capitalize font-medium", metodo === m ? "bg-primary text-primary-foreground border-primary" : "")}>
+                {m}
+              </button>
+            ))}
+          </div>
+        </div>
+        <DialogFooter>
+          <Button
+            disabled={!valor || valor <= 0 || valor > saldo}
+            onClick={() => { onConfirm(valor, metodo); setOpen(false); setMonto(""); }}
+            className="w-full h-12"
+          >
+            Confirmar abono
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
