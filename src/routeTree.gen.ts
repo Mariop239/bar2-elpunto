@@ -15,8 +15,13 @@ import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppRegistroRouteImport } from './routes/_app.registro'
 import { Route as AppInicioRouteImport } from './routes/_app.inicio'
+import { Route as AppAjustesRouteImport } from './routes/_app.ajustes'
 import { Route as AppDeudoresIndexRouteImport } from './routes/_app.deudores.index'
+import { Route as AppAjustesIndexRouteImport } from './routes/_app.ajustes.index'
 import { Route as AppDeudoresClienteIdRouteImport } from './routes/_app.deudores.$clienteId'
+import { Route as AppAjustesHistorialRouteImport } from './routes/_app.ajustes.historial'
+import { Route as AppAjustesEmpleadosRouteImport } from './routes/_app.ajustes.empleados'
+import { Route as AppAjustesCatalogoRouteImport } from './routes/_app.ajustes.catalogo'
 
 const PinRoute = PinRouteImport.update({
   id: '/pin',
@@ -47,24 +52,54 @@ const AppInicioRoute = AppInicioRouteImport.update({
   path: '/inicio',
   getParentRoute: () => AppRoute,
 } as any)
+const AppAjustesRoute = AppAjustesRouteImport.update({
+  id: '/ajustes',
+  path: '/ajustes',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppDeudoresIndexRoute = AppDeudoresIndexRouteImport.update({
   id: '/deudores/',
   path: '/deudores/',
   getParentRoute: () => AppRoute,
+} as any)
+const AppAjustesIndexRoute = AppAjustesIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppAjustesRoute,
 } as any)
 const AppDeudoresClienteIdRoute = AppDeudoresClienteIdRouteImport.update({
   id: '/deudores/$clienteId',
   path: '/deudores/$clienteId',
   getParentRoute: () => AppRoute,
 } as any)
+const AppAjustesHistorialRoute = AppAjustesHistorialRouteImport.update({
+  id: '/historial',
+  path: '/historial',
+  getParentRoute: () => AppAjustesRoute,
+} as any)
+const AppAjustesEmpleadosRoute = AppAjustesEmpleadosRouteImport.update({
+  id: '/empleados',
+  path: '/empleados',
+  getParentRoute: () => AppAjustesRoute,
+} as any)
+const AppAjustesCatalogoRoute = AppAjustesCatalogoRouteImport.update({
+  id: '/catalogo',
+  path: '/catalogo',
+  getParentRoute: () => AppAjustesRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/pin': typeof PinRoute
+  '/ajustes': typeof AppAjustesRouteWithChildren
   '/inicio': typeof AppInicioRoute
   '/registro': typeof AppRegistroRoute
+  '/ajustes/catalogo': typeof AppAjustesCatalogoRoute
+  '/ajustes/empleados': typeof AppAjustesEmpleadosRoute
+  '/ajustes/historial': typeof AppAjustesHistorialRoute
   '/deudores/$clienteId': typeof AppDeudoresClienteIdRoute
+  '/ajustes/': typeof AppAjustesIndexRoute
   '/deudores/': typeof AppDeudoresIndexRoute
 }
 export interface FileRoutesByTo {
@@ -73,7 +108,11 @@ export interface FileRoutesByTo {
   '/pin': typeof PinRoute
   '/inicio': typeof AppInicioRoute
   '/registro': typeof AppRegistroRoute
+  '/ajustes/catalogo': typeof AppAjustesCatalogoRoute
+  '/ajustes/empleados': typeof AppAjustesEmpleadosRoute
+  '/ajustes/historial': typeof AppAjustesHistorialRoute
   '/deudores/$clienteId': typeof AppDeudoresClienteIdRoute
+  '/ajustes': typeof AppAjustesIndexRoute
   '/deudores': typeof AppDeudoresIndexRoute
 }
 export interface FileRoutesById {
@@ -82,9 +121,14 @@ export interface FileRoutesById {
   '/_app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
   '/pin': typeof PinRoute
+  '/_app/ajustes': typeof AppAjustesRouteWithChildren
   '/_app/inicio': typeof AppInicioRoute
   '/_app/registro': typeof AppRegistroRoute
+  '/_app/ajustes/catalogo': typeof AppAjustesCatalogoRoute
+  '/_app/ajustes/empleados': typeof AppAjustesEmpleadosRoute
+  '/_app/ajustes/historial': typeof AppAjustesHistorialRoute
   '/_app/deudores/$clienteId': typeof AppDeudoresClienteIdRoute
+  '/_app/ajustes/': typeof AppAjustesIndexRoute
   '/_app/deudores/': typeof AppDeudoresIndexRoute
 }
 export interface FileRouteTypes {
@@ -93,9 +137,14 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/pin'
+    | '/ajustes'
     | '/inicio'
     | '/registro'
+    | '/ajustes/catalogo'
+    | '/ajustes/empleados'
+    | '/ajustes/historial'
     | '/deudores/$clienteId'
+    | '/ajustes/'
     | '/deudores/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -104,7 +153,11 @@ export interface FileRouteTypes {
     | '/pin'
     | '/inicio'
     | '/registro'
+    | '/ajustes/catalogo'
+    | '/ajustes/empleados'
+    | '/ajustes/historial'
     | '/deudores/$clienteId'
+    | '/ajustes'
     | '/deudores'
   id:
     | '__root__'
@@ -112,9 +165,14 @@ export interface FileRouteTypes {
     | '/_app'
     | '/login'
     | '/pin'
+    | '/_app/ajustes'
     | '/_app/inicio'
     | '/_app/registro'
+    | '/_app/ajustes/catalogo'
+    | '/_app/ajustes/empleados'
+    | '/_app/ajustes/historial'
     | '/_app/deudores/$clienteId'
+    | '/_app/ajustes/'
     | '/_app/deudores/'
   fileRoutesById: FileRoutesById
 }
@@ -169,12 +227,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppInicioRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/ajustes': {
+      id: '/_app/ajustes'
+      path: '/ajustes'
+      fullPath: '/ajustes'
+      preLoaderRoute: typeof AppAjustesRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/deudores/': {
       id: '/_app/deudores/'
       path: '/deudores'
       fullPath: '/deudores/'
       preLoaderRoute: typeof AppDeudoresIndexRouteImport
       parentRoute: typeof AppRoute
+    }
+    '/_app/ajustes/': {
+      id: '/_app/ajustes/'
+      path: '/'
+      fullPath: '/ajustes/'
+      preLoaderRoute: typeof AppAjustesIndexRouteImport
+      parentRoute: typeof AppAjustesRoute
     }
     '/_app/deudores/$clienteId': {
       id: '/_app/deudores/$clienteId'
@@ -183,10 +255,50 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppDeudoresClienteIdRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/ajustes/historial': {
+      id: '/_app/ajustes/historial'
+      path: '/historial'
+      fullPath: '/ajustes/historial'
+      preLoaderRoute: typeof AppAjustesHistorialRouteImport
+      parentRoute: typeof AppAjustesRoute
+    }
+    '/_app/ajustes/empleados': {
+      id: '/_app/ajustes/empleados'
+      path: '/empleados'
+      fullPath: '/ajustes/empleados'
+      preLoaderRoute: typeof AppAjustesEmpleadosRouteImport
+      parentRoute: typeof AppAjustesRoute
+    }
+    '/_app/ajustes/catalogo': {
+      id: '/_app/ajustes/catalogo'
+      path: '/catalogo'
+      fullPath: '/ajustes/catalogo'
+      preLoaderRoute: typeof AppAjustesCatalogoRouteImport
+      parentRoute: typeof AppAjustesRoute
+    }
   }
 }
 
+interface AppAjustesRouteChildren {
+  AppAjustesCatalogoRoute: typeof AppAjustesCatalogoRoute
+  AppAjustesEmpleadosRoute: typeof AppAjustesEmpleadosRoute
+  AppAjustesHistorialRoute: typeof AppAjustesHistorialRoute
+  AppAjustesIndexRoute: typeof AppAjustesIndexRoute
+}
+
+const AppAjustesRouteChildren: AppAjustesRouteChildren = {
+  AppAjustesCatalogoRoute: AppAjustesCatalogoRoute,
+  AppAjustesEmpleadosRoute: AppAjustesEmpleadosRoute,
+  AppAjustesHistorialRoute: AppAjustesHistorialRoute,
+  AppAjustesIndexRoute: AppAjustesIndexRoute,
+}
+
+const AppAjustesRouteWithChildren = AppAjustesRoute._addFileChildren(
+  AppAjustesRouteChildren,
+)
+
 interface AppRouteChildren {
+  AppAjustesRoute: typeof AppAjustesRouteWithChildren
   AppInicioRoute: typeof AppInicioRoute
   AppRegistroRoute: typeof AppRegistroRoute
   AppDeudoresClienteIdRoute: typeof AppDeudoresClienteIdRoute
@@ -194,6 +306,7 @@ interface AppRouteChildren {
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppAjustesRoute: AppAjustesRouteWithChildren,
   AppInicioRoute: AppInicioRoute,
   AppRegistroRoute: AppRegistroRoute,
   AppDeudoresClienteIdRoute: AppDeudoresClienteIdRoute,
