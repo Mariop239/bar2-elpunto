@@ -1,0 +1,54 @@
+import { createFileRoute, Outlet, Link, useLocation } from "@tanstack/react-router";
+import { useEmpleado } from "@/lib/empleado-store";
+import { Card } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
+
+export const Route = createFileRoute("/_app/ajustes")({
+  component: AjustesLayout,
+});
+
+function AjustesLayout() {
+  const empleado = useEmpleado((s) => s.empleado);
+  const location = useLocation();
+
+  if (empleado?.rol !== "admin") {
+    return (
+      <div className="p-6 max-w-md mx-auto">
+        <Card className="p-6 text-center">
+          <h2 className="font-bold text-lg">Solo Admin</h2>
+          <p className="text-sm text-muted-foreground mt-2">Esta sección está restringida.</p>
+        </Card>
+      </div>
+    );
+  }
+
+  const tabs = [
+    { to: "/ajustes/catalogo", label: "Catálogo" },
+    { to: "/ajustes/empleados", label: "Empleados" },
+    { to: "/ajustes/historial", label: "Historial" },
+  ] as const;
+
+  return (
+    <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-4">
+      <h2 className="text-2xl font-bold">Ajustes</h2>
+      <div className="flex gap-2 overflow-x-auto pb-1">
+        {tabs.map((t) => {
+          const active = location.pathname.startsWith(t.to);
+          return (
+            <Link
+              key={t.to}
+              to={t.to}
+              className={cn(
+                "px-4 py-2 rounded-lg border whitespace-nowrap font-medium",
+                active ? "bg-primary text-primary-foreground border-primary" : "bg-card"
+              )}
+            >
+              {t.label}
+            </Link>
+          );
+        })}
+      </div>
+      <Outlet />
+    </div>
+  );
+}
