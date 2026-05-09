@@ -5,7 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 import { toast } from "sonner";
+import { formatAuthError } from "@/lib/auth-errors";
 
 export const Route = createFileRoute("/login")({
   beforeLoad: async () => {
@@ -20,14 +23,21 @@ function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [errorCode, setErrorCode] = useState<string | null>(null);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMsg(null);
+    setErrorCode(null);
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
     setLoading(false);
     if (error) {
-      toast.error(error.message);
+      const friendly = formatAuthError(error);
+      setErrorMsg(friendly);
+      setErrorCode((error as { code?: string }).code ?? `HTTP ${error.status ?? "?"}`);
+      toast.error(friendly);
       return;
     }
     toast.success("Dispositivo conectado");
@@ -41,6 +51,22 @@ function LoginPage() {
           <h1 className="text-2xl font-bold">El Punto</h1>
           <p className="text-sm text-muted-foreground">Inicia sesión del dispositivo</p>
         </div>
+
+        {errorMsg && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>No se pudo iniciar sesión</AlertTitle>
+            <AlertDescription className="space-y-1">
+              <p>{errorMsg}</p>
+              {errorCode && (
+                <p className="text-xs opacity-70">
+                  Código: {errorCode} · Correo: {email.trim() || "(vacío)"}
+                </p>
+              )}
+            </AlertDescription>
+          </Alert>
+        )}
+
         <form onSubmit={onSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="email">Correo</Label>
