@@ -81,7 +81,7 @@ function PinPage() {
           <h1 className="text-2xl font-bold">¿Quién entra al turno?</h1>
         </div>
         <div className="w-full grid grid-cols-2 gap-2">
-          {empleados.map((e) => (
+          {empleados.map((e: Empleado) => (
             <button
               key={e.id}
               onClick={() => setSelected(e)}
