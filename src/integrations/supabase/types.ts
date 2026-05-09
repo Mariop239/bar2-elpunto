@@ -14,16 +14,265 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      abonos: {
+        Row: {
+          cliente_id: string
+          created_at: string
+          empleado_id: string | null
+          id: string
+          metodo_pago: Database["public"]["Enums"]["metodo_pago"]
+          monto: number
+          transaccion_id: string | null
+        }
+        Insert: {
+          cliente_id: string
+          created_at?: string
+          empleado_id?: string | null
+          id?: string
+          metodo_pago: Database["public"]["Enums"]["metodo_pago"]
+          monto: number
+          transaccion_id?: string | null
+        }
+        Update: {
+          cliente_id?: string
+          created_at?: string
+          empleado_id?: string | null
+          id?: string
+          metodo_pago?: Database["public"]["Enums"]["metodo_pago"]
+          monto?: number
+          transaccion_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "abonos_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "abonos_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "abonos_transaccion_id_fkey"
+            columns: ["transaccion_id"]
+            isOneToOne: false
+            referencedRelation: "transacciones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clientes: {
+        Row: {
+          created_at: string
+          id: string
+          nombre: string
+          saldo_total: number
+          telefono: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nombre: string
+          saldo_total?: number
+          telefono?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nombre?: string
+          saldo_total?: number
+          telefono?: string | null
+        }
+        Relationships: []
+      }
+      deudas: {
+        Row: {
+          cantidad: number
+          cliente_id: string
+          created_at: string
+          empleado_id: string | null
+          estado: Database["public"]["Enums"]["estado_deuda"]
+          id: string
+          monto: number
+          pagado_at: string | null
+          precio_unitario: number
+          producto_id: string | null
+          producto_nombre: string
+        }
+        Insert: {
+          cantidad?: number
+          cliente_id: string
+          created_at?: string
+          empleado_id?: string | null
+          estado?: Database["public"]["Enums"]["estado_deuda"]
+          id?: string
+          monto: number
+          pagado_at?: string | null
+          precio_unitario: number
+          producto_id?: string | null
+          producto_nombre: string
+        }
+        Update: {
+          cantidad?: number
+          cliente_id?: string
+          created_at?: string
+          empleado_id?: string | null
+          estado?: Database["public"]["Enums"]["estado_deuda"]
+          id?: string
+          monto?: number
+          pagado_at?: string | null
+          precio_unitario?: number
+          producto_id?: string | null
+          producto_nombre?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deudas_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deudas_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deudas_producto_id_fkey"
+            columns: ["producto_id"]
+            isOneToOne: false
+            referencedRelation: "productos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      empleados: {
+        Row: {
+          activo: boolean
+          created_at: string
+          id: string
+          nombre: string
+          pin_hash: string
+          rol: Database["public"]["Enums"]["rol_empleado"]
+        }
+        Insert: {
+          activo?: boolean
+          created_at?: string
+          id?: string
+          nombre: string
+          pin_hash: string
+          rol?: Database["public"]["Enums"]["rol_empleado"]
+        }
+        Update: {
+          activo?: boolean
+          created_at?: string
+          id?: string
+          nombre?: string
+          pin_hash?: string
+          rol?: Database["public"]["Enums"]["rol_empleado"]
+        }
+        Relationships: []
+      }
+      productos: {
+        Row: {
+          activo: boolean
+          created_at: string
+          id: string
+          nombre: string
+          precio: number
+        }
+        Insert: {
+          activo?: boolean
+          created_at?: string
+          id?: string
+          nombre: string
+          precio: number
+        }
+        Update: {
+          activo?: boolean
+          created_at?: string
+          id?: string
+          nombre?: string
+          precio?: number
+        }
+        Relationships: []
+      }
+      transacciones: {
+        Row: {
+          abono_id: string | null
+          created_at: string
+          descripcion: string | null
+          empleado_id: string | null
+          id: string
+          metodo_pago: Database["public"]["Enums"]["metodo_pago"] | null
+          monto: number
+          origen: string
+          tipo: Database["public"]["Enums"]["tipo_transaccion"]
+        }
+        Insert: {
+          abono_id?: string | null
+          created_at?: string
+          descripcion?: string | null
+          empleado_id?: string | null
+          id?: string
+          metodo_pago?: Database["public"]["Enums"]["metodo_pago"] | null
+          monto: number
+          origen?: string
+          tipo: Database["public"]["Enums"]["tipo_transaccion"]
+        }
+        Update: {
+          abono_id?: string | null
+          created_at?: string
+          descripcion?: string | null
+          empleado_id?: string | null
+          id?: string
+          metodo_pago?: Database["public"]["Enums"]["metodo_pago"] | null
+          monto?: number
+          origen?: string
+          tipo?: Database["public"]["Enums"]["tipo_transaccion"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transacciones_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      aplicar_abono: {
+        Args: {
+          p_cliente: string
+          p_empleado: string
+          p_metodo: Database["public"]["Enums"]["metodo_pago"]
+          p_monto: number
+        }
+        Returns: string
+      }
+      recalcular_saldo_cliente: {
+        Args: { p_cliente: string }
+        Returns: undefined
+      }
     }
     Enums: {
-      [_ in never]: never
+      estado_deuda: "pendiente" | "pagado"
+      metodo_pago: "efectivo" | "transferencia"
+      rol_empleado: "admin" | "empleado"
+      tipo_transaccion: "ingreso" | "gasto" | "costo"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +399,11 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      estado_deuda: ["pendiente", "pagado"],
+      metodo_pago: ["efectivo", "transferencia"],
+      rol_empleado: ["admin", "empleado"],
+      tipo_transaccion: ["ingreso", "gasto", "costo"],
+    },
   },
 } as const
