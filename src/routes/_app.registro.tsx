@@ -296,6 +296,21 @@ function FiadosTab() {
           </div>
         </Card>
 
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input 
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+            placeholder="Buscar producto por nombre..."
+            className="pl-9 pr-9 h-12"
+          />
+          {busqueda && (
+            <button onClick={() => setBusqueda("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+
         <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
           {["Todos", ...Array.from(new Set((productos.data ?? []).map((p) => p.categoria)))].map((cat) => (
             <button
@@ -316,6 +331,7 @@ function FiadosTab() {
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {(productos.data ?? [])
             .filter((p) => categoriaActiva === "Todos" || p.categoria === categoriaActiva)
+            .filter((p) => p.nombre.toLowerCase().includes(busqueda.toLowerCase()))
             .map((p) => {
               const bgMap: Record<string, string> = {
                 blue: "bg-blue-100 hover:bg-blue-200 text-blue-900 border-blue-200",
