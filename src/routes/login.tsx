@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import { toast } from "sonner";
@@ -25,6 +26,7 @@ function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [errorCode, setErrorCode] = useState<string | null>(null);
+  const [rememberMe, setRememberMe] = useState(true);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,6 +50,14 @@ function LoginPage() {
       toast.error(friendly);
       return;
     }
+
+    if (rememberMe) {
+      localStorage.setItem("remember_me", "true");
+    } else {
+      localStorage.removeItem("remember_me");
+    }
+    sessionStorage.setItem("active_session", "true");
+
     toast.success("Dispositivo conectado");
     navigate({ to: "/pin", replace: true });
   };
@@ -83,6 +93,10 @@ function LoginPage() {
           <div className="space-y-2">
             <Label htmlFor="password">Contraseña</Label>
             <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className="h-12" autoComplete="current-password" />
+          </div>
+          <div className="flex items-center space-x-2 pt-1 pb-2">
+            <Checkbox id="remember" checked={rememberMe} onCheckedChange={(checked) => setRememberMe(checked as boolean)} />
+            <Label htmlFor="remember" className="text-sm font-normal cursor-pointer">Recordarme en este dispositivo</Label>
           </div>
           <Button type="submit" disabled={loading} className="w-full h-12 text-base">
             {loading ? "Entrando..." : "Entrar"}
