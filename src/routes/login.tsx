@@ -12,8 +12,8 @@ import { formatAuthError } from "@/lib/auth-errors";
 
 export const Route = createFileRoute("/login")({
   beforeLoad: async () => {
-    const { data } = await supabase.auth.getSession();
-    if (data.session) throw redirect({ to: "/pin" });
+    const { data, error } = await supabase.auth.getUser();
+    if (!error && data.user) throw redirect({ to: "/pin" });
   },
   component: LoginPage,
 });
@@ -30,8 +30,16 @@ function LoginPage() {
     e.preventDefault();
     setErrorMsg(null);
     setErrorCode(null);
+    const cleanEmail = email.trim();
+    if (!cleanEmail || !password) {
+      const message = "Ingresa el correo y la contraseña para continuar.";
+      setErrorMsg(message);
+      setErrorCode("Campos requeridos");
+      toast.error(message);
+      return;
+    }
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+    const { error } = await supabase.auth.signInWithPassword({ email: cleanEmail, password });
     setLoading(false);
     if (error) {
       const friendly = formatAuthError(error);
@@ -41,7 +49,7 @@ function LoginPage() {
       return;
     }
     toast.success("Dispositivo conectado");
-    navigate({ to: "/pin" });
+    navigate({ to: "/pin", replace: true });
   };
 
   return (
