@@ -20,14 +20,26 @@ function CatalogoPage() {
   const productos = useQuery({
     queryKey: ["productos-todos"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("productos").select("*").order("nombre");
+      const { data, error } = await supabase.from("productos").select("*, categorias(id, nombre, color)").order("nombre");
       if (error) throw error;
       return data ?? [];
     },
   });
 
+  const categorias = useQuery({
+    queryKey: ["categorias"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("categorias").select("*").order("created_at");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const defaultCategoryId = categorias.data?.find((c) => c.nombre === "Otros")?.id || "";
+
   const [nombre, setNombre] = useState("");
   const [precio, setPrecio] = useState("");
+  const [categoriaId, setCategoriaId] = useState("");
 
   const crear = useMutation({
     mutationFn: async () => {
