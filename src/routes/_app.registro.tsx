@@ -322,6 +322,9 @@ function FiadosTab() {
                 green: "bg-green-100 hover:bg-green-200 text-green-900 border-green-200",
                 red: "bg-red-100 hover:bg-red-200 text-red-900 border-red-200",
                 slate: "bg-slate-100 hover:bg-slate-200 text-slate-900 border-slate-200",
+                yellow: "bg-yellow-100 hover:bg-yellow-200 text-yellow-900 border-yellow-200",
+                purple: "bg-purple-100 hover:bg-purple-200 text-purple-900 border-purple-200",
+                pink: "bg-pink-100 hover:bg-pink-200 text-pink-900 border-pink-200",
               };
               const colorClass = bgMap[p.color] || bgMap.slate;
               
