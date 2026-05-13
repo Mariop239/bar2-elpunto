@@ -22,6 +22,17 @@ function AppLayout() {
     return unsub;
   }, []);
 
+  useEffect(() => {
+    if (hydrated) {
+      useEmpleado.getState().checkExpiration();
+      // Verificamos cada minuto si la sesión de PIN ha expirado
+      const interval = setInterval(() => {
+        useEmpleado.getState().checkExpiration();
+      }, 60000);
+      return () => clearInterval(interval);
+    }
+  }, [hydrated]);
+
   if (!hydrated) return null;
   if (!empleado) {
     return <Navigate to="/pin" replace />;
