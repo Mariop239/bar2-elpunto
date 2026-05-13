@@ -219,6 +219,7 @@ function FiadosTab() {
         cantidad: i.cantidad,
         monto: i.cantidad * i.producto.precio,
         empleado_id: empleado.id,
+        created_at: fechaDeuda.toISOString(),
       }));
       const { error } = await supabase.from("deudas").insert(rows);
       if (error) throw error;
@@ -226,6 +227,7 @@ function FiadosTab() {
     onSuccess: () => {
       toast.success("Fiado registrado");
       setCart({});
+      setFechaDeuda(new Date());
       qc.invalidateQueries({ queryKey: ["clientes"] });
       qc.invalidateQueries({ queryKey: ["deudores"] });
     },
@@ -235,20 +237,55 @@ function FiadosTab() {
   return (
     <div className="grid md:grid-cols-3 gap-4">
       <div className="md:col-span-2 space-y-3">
-        <Card className="p-3 flex flex-col sm:flex-row gap-2">
-          <select
-            value={clienteId}
-            onChange={(e) => setClienteId(e.target.value)}
-            className="flex-1 h-12 rounded-md border border-input bg-background px-3 text-base"
-          >
-            <option value="">Selecciona cliente…</option>
-            {(clientes.data ?? []).map((c) => (
-              <option key={c.id} value={c.id}>{c.nombre}</option>
-            ))}
-          </select>
-          <div className="flex gap-2">
-            <Input value={nuevoCliente} onChange={(e) => setNuevoCliente(e.target.value)} placeholder="Nuevo cliente" className="h-12" />
-            <Button onClick={() => nuevoCliente.trim() && crearCliente.mutate(nuevoCliente.trim())} disabled={crearCliente.isPending} className="h-12">+</Button>
+        <Card className="p-3 flex flex-col gap-3">
+          <div className="flex flex-col sm:flex-row gap-2">
+            <select
+              value={clienteId}
+              onChange={(e) => setClienteId(e.target.value)}
+              className="flex-1 h-12 rounded-md border border-input bg-background px-3 text-base"
+            >
+              <option value="">Selecciona cliente…</option>
+              {(clientes.data ?? []).map((c) => (
+                <option key={c.id} value={c.id}>{c.nombre}</option>
+              ))}
+            </select>
+            <div className="flex gap-2">
+              <Input value={nuevoCliente} onChange={(e) => setNuevoCliente(e.target.value)} placeholder="Nuevo cliente" className="h-12" />
+              <Button onClick={() => nuevoCliente.trim() && crearCliente.mutate(nuevoCliente.trim())} disabled={crearCliente.isPending} className="h-12">+</Button>
+            </div>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label className="text-xs text-muted-foreground ml-1">Fecha de la Deuda</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant={"outline"}
+                  className={cn(
+                    "w-full h-12 justify-start text-left font-normal",
+                    !fechaDeuda && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {fechaDeuda ? format(fechaDeuda, "PPP HH:mm", { locale: es }) : <span>Selecciona una fecha</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={fechaDeuda}
+                  onSelect={(date) => {
+                    if (date) {
+                      const newDate = new Date(date);
+                      const now = new Date();
+                      newDate.setHours(now.getHours(), now.getMinutes(), now.getSeconds());
+                      setFechaDeuda(newDate);
+                    }
+                  }}
+                  initialFocus
+                  className="p-3 pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
           </div>
         </Card>
 
