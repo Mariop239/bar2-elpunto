@@ -9,7 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { useState } from "react";
 import { toast } from "sonner";
 import { formatCurrency } from "@/lib/utils";
-import { Trash2 } from "lucide-react";
+import { Trash2, Search, X } from "lucide-react";
 
 export const Route = createFileRoute("/_app/ajustes/catalogo")({
   component: CatalogoPage,
