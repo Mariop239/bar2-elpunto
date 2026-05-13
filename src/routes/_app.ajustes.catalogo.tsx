@@ -40,6 +40,7 @@ function CatalogoPage() {
   const [nombre, setNombre] = useState("");
   const [precio, setPrecio] = useState("");
   const [categoriaId, setCategoriaId] = useState("");
+  const [busqueda, setBusqueda] = useState("");
 
   const crear = useMutation({
     mutationFn: async () => {
