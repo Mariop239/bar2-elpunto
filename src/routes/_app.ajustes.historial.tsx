@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useState } from "react";
 import { formatCurrency } from "@/lib/utils";
-import { Download } from "lucide-react";
+import { Download, FileSpreadsheet } from "lucide-react";
+import * as XLSX from "xlsx";
 
 export const Route = createFileRoute("/_app/ajustes/historial")({
   component: HistorialPage,
@@ -19,22 +20,11 @@ function todayISO(offset = 0) {
   return d.toISOString().slice(0, 10);
 }
 
-function toCSV(rows: Record<string, any>[]): string {
-  if (!rows.length) return "";
-  const headers = Object.keys(rows[0]);
-  const esc = (v: any) => {
-    const s = v == null ? "" : String(v);
-    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-  };
-  return [headers.join(","), ...rows.map((r) => headers.map((h) => esc(r[h])).join(","))].join("\n");
-}
-
-function downloadCSV(filename: string, csv: string) {
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url; a.download = filename; a.click();
-  URL.revokeObjectURL(url);
+function formatDate(isoStr: string | null) {
+  if (!isoStr) return "";
+  const d = new Date(isoStr);
+  const pad = (n: number) => n.toString().padStart(2, "0");
+  return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 function HistorialPage() {
@@ -61,11 +51,68 @@ function HistorialPage() {
     },
   });
 
-  const exportar = async (tabla: "transacciones" | "deudas" | "abonos") => {
+  const exportarTransacciones = async () => {
     const { ini, fin } = range();
-    const { data, error } = await supabase.from(tabla).select("*").gte("created_at", ini).lte("created_at", fin);
-    if (error) { alert(error.message); return; }
-    downloadCSV(`${tabla}_${desde}_${hasta}.csv`, toCSV(data ?? []));
+    const { data, error } = await supabase
+      .from("transacciones")
+      .select("created_at, tipo, metodo_pago, descripcion, origen, monto, empleados(nombre)")
+      .gte("created_at", ini)
+      .lte("created_at", fin)
+      .order("created_at", { ascending: true });
+
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
+    const rows = (data ?? []).map((t: any) => ({
+      "FECHA": formatDate(t.created_at),
+      "CATEGORÍA": t.tipo?.toUpperCase() || "",
+      "MÉTODO PAGO": t.metodo_pago ? t.metodo_pago.toUpperCase() : "—",
+      "PRODUCTO/CONCEPTO": t.descripcion || t.origen || "",
+      "MONTO $": Number(t.monto),
+      "EMPLEADO": t.empleados?.nombre || "—"
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Transacciones");
+    XLSX.writeFile(wb, `Reporte_Diario_${desde}_${hasta}.xlsx`);
+  };
+
+  const exportarDeudores = async () => {
+    const { data, error } = await supabase
+      .from("clientes")
+      .select("nombre, saldo_total, deudas(created_at, estado)")
+      .gt("saldo_total", 0);
+
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
+    const clientesConDeudas = (data ?? []).map((c: any) => {
+      const deudasPendientes = (c.deudas || []).filter((d: any) => d.estado === "pendiente");
+      const oldestDate = deudasPendientes.length > 0
+        ? new Date(Math.min(...deudasPendientes.map((d: any) => new Date(d.created_at).getTime())))
+        : null;
+
+      return {
+        "NOMBRE DEL CLIENTE": c.nombre,
+        "SALDO TOTAL $": Number(c.saldo_total),
+        oldestTime: oldestDate ? oldestDate.getTime() : 0,
+        "FECHA DEUDA MÁS ANTIGUA": oldestDate ? formatDate(oldestDate.toISOString()) : "—"
+      };
+    });
+
+    clientesConDeudas.sort((a, b) => a.oldestTime - b.oldestTime);
+
+    const rows = clientesConDeudas.map(({ oldestTime, ...rest }) => rest);
+
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Deudores");
+    XLSX.writeFile(wb, `Lista_Deudores_${todayISO()}.xlsx`);
   };
 
   const totales = (trans.data ?? []).reduce(
@@ -84,10 +131,15 @@ function HistorialPage() {
       <Card className="p-4 grid sm:grid-cols-3 gap-3 items-end">
         <div><Label>Desde</Label><Input type="date" value={desde} onChange={(e) => setDesde(e.target.value)} className="h-12" /></div>
         <div><Label>Hasta</Label><Input type="date" value={hasta} onChange={(e) => setHasta(e.target.value)} className="h-12" /></div>
-        <div className="grid grid-cols-3 gap-1">
-          <Button variant="outline" onClick={() => exportar("transacciones")} className="text-xs"><Download className="h-3 w-3 mr-1" />Trans</Button>
-          <Button variant="outline" onClick={() => exportar("deudas")} className="text-xs"><Download className="h-3 w-3 mr-1" />Deudas</Button>
-          <Button variant="outline" onClick={() => exportar("abonos")} className="text-xs"><Download className="h-3 w-3 mr-1" />Abonos</Button>
+        <div className="grid grid-cols-2 gap-2">
+          <Button variant="outline" onClick={exportarTransacciones} className="text-xs px-2" title="Exportar reporte del día o rango seleccionado">
+            <FileSpreadsheet className="h-4 w-4 mr-1 text-green-600" />
+            Transacciones
+          </Button>
+          <Button variant="outline" onClick={exportarDeudores} className="text-xs px-2" title="Exportar lista de clientes con deudas pendientes">
+            <FileSpreadsheet className="h-4 w-4 mr-1 text-green-600" />
+            Deudores
+          </Button>
         </div>
       </Card>
 
