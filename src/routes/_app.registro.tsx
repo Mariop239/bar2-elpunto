@@ -359,8 +359,8 @@ function FiadosTab() {
                 </button>
               );
             })}
-          {productos.data?.filter((p) => categoriaActiva === "Todos" || p.categoria === categoriaActiva).length === 0 && (
-            <p className="col-span-full text-sm text-muted-foreground p-4">No hay productos en esta categoría.</p>
+          {productos.data?.filter((p) => categoriaActiva === "Todos" || p.categoria === categoriaActiva).filter((p) => p.nombre.toLowerCase().includes(busqueda.toLowerCase())).length === 0 && (
+            <p className="col-span-full text-sm text-muted-foreground p-4">No se encontraron productos.</p>
           )}
         </div>
       </div>
