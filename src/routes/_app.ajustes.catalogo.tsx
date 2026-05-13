@@ -45,10 +45,21 @@ function CatalogoPage() {
     mutationFn: async () => {
       const p = Number(precio);
       if (!nombre.trim() || !p || p < 0) throw new Error("Datos inválidos");
-      const { error } = await supabase.from("productos").insert({ nombre: nombre.trim(), precio: p });
+      const { error } = await supabase.from("productos").insert({ 
+        nombre: nombre.trim(), 
+        precio: p,
+        categoria_id: categoriaId || defaultCategoryId || null
+      });
       if (error) throw error;
     },
-    onSuccess: () => { toast.success("Producto creado"); setNombre(""); setPrecio(""); qc.invalidateQueries({ queryKey: ["productos-todos"] }); qc.invalidateQueries({ queryKey: ["productos-activos"] }); },
+    onSuccess: () => { 
+      toast.success("Producto creado"); 
+      setNombre(""); 
+      setPrecio(""); 
+      setCategoriaId("");
+      qc.invalidateQueries({ queryKey: ["productos-todos"] }); 
+      qc.invalidateQueries({ queryKey: ["productos-activos"] }); 
+    },
     onError: (e: Error) => toast.error(e.message),
   });
 
