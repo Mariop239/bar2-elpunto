@@ -1,19 +1,23 @@
-### Cambios propuestos para el Panel de Categorías
+Voy a implementar estas mejoras creando exportaciones limpias en formato nativo de Excel (`.xlsx`), lo que soluciona todos los problemas de separadores, formato de moneda y visualización que suelen ocurrir con los CSV.
 
-1. **Nueva Pestaña en Ajustes**
-   - Agregaremos una nueva pestaña llamada "Categorías" en el módulo de Ajustes, junto a Catálogo, Empleados e Historial.
+Aquí está el plan de implementación:
 
-2. **Gestión de Categorías (`/ajustes/categorias`)**
-   - **Crear Categorías:** Un pequeño formulario donde podrás escribir el nombre de la nueva categoría y elegir su color.
-   - **Editar Categorías:** Una lista con todas las categorías existentes. Podrás editar directamente el nombre escribiendo sobre él y cambiar el color con un menú desplegable.
-   - **Eliminar Categorías:** Botón para borrar categorías. (Nota: Si una categoría tiene productos asignados, el sistema no te dejará borrarla por seguridad; primero tendrás que cambiar esos productos a otra categoría).
+1. **Agregar librería Excel:**
+   - Instalaré la librería `xlsx` para generar archivos `.xlsx` reales que abran perfectamente en Excel sin necesidad de configurar separadores ni codificación.
 
-3. **Expansión de Colores**
-   - Agregaremos más opciones de colores sutiles para los botones del POS. 
-   - Colores disponibles: Gris (Slate), Azul, Naranja, Verde, Rojo, Amarillo, Morado y Rosa.
-   - Actualizaremos los botones de la pantalla de Registro para que reconozcan estos nuevos colores de forma automática.
+2. **Nuevo Reporte de Transacciones ("Reporte Diario / Rango"):**
+   - Extraerá las transacciones del rango de fechas seleccionado (Ingresos, Costos, Gastos).
+   - Incluirá el nombre del empleado que realizó la transacción consultando la base de datos.
+   - Usará los encabezados exactos que pediste: `FECHA`, `CATEGORÍA`, `MÉTODO PAGO`, `PRODUCTO/CONCEPTO`, `MONTO $`, `EMPLEADO`.
+   - Formateará la fecha como `DD/MM/YYYY HH:mm` y dejará el monto como un número decimal limpio para que Excel permita sumarlo y filtrarlo nativamente.
 
-### Detalles técnicos:
-- Se creará la nueva ruta `src/routes/_app.ajustes.categorias.tsx`.
-- Se actualizará el menú de navegación de ajustes (`src/routes/_app.ajustes.tsx`).
-- Se expandirá el mapeo de colores (`bgMap`) en `src/routes/_app.registro.tsx` para soportar las nuevas opciones elegibles desde el panel.
+3. **Nuevo Reporte de Deudores ("Lista de Deudores"):**
+   - Extraerá todos los clientes y calculará su saldo total.
+   - Revisará las deudas pendientes de cada cliente para encontrar la fecha de la deuda más antigua.
+   - Usará los encabezados: `NOMBRE DEL CLIENTE`, `SALDO TOTAL $`, `FECHA DEUDA MÁS ANTIGUA`.
+   - Solo incluirá a los clientes que tengan un saldo total mayor a cero.
+
+4. **Actualización de la Interfaz:**
+   - Reemplazaré los 3 botones pequeños de exportación en la vista "Historial" por dos botones más claros y grandes: **"Exportar Transacciones"** y **"Exportar Deudores"**.
+
+Todo mantendrá la estética actual y la misma selección de fechas "Desde" y "Hasta" funcionará para las transacciones.
