@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
+import { createFileRoute, Outlet, redirect, Navigate } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/app-shell";
 import { useEmpleado } from "@/lib/empleado-store";
@@ -24,8 +24,7 @@ function AppLayout() {
 
   if (!hydrated) return null;
   if (!empleado) {
-    if (typeof window !== "undefined") window.location.replace("/pin");
-    return null;
+    return <Navigate to="/pin" replace />;
   }
 
   return (
