@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { formatCOP } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils";
 import { Banknote, ArrowLeftRight, ShoppingCart, Receipt, PlusCircle, Wallet } from "lucide-react";
 
 export const Route = createFileRoute("/_app/inicio")({
@@ -63,7 +63,7 @@ function Dashboard() {
               <c.icon className={`h-6 w-6 ${c.color}`} />
             </div>
             <p className="mt-2 text-xs md:text-sm text-muted-foreground">{c.label}</p>
-            <p className="text-xl md:text-2xl font-bold">{isLoading ? "—" : formatCOP(c.value)}</p>
+            <p className="text-xl md:text-2xl font-bold">{isLoading ? "—" : formatCurrency(c.value)}</p>
           </Card>
         ))}
       </div>
@@ -71,7 +71,7 @@ function Dashboard() {
       <Card className="p-5">
         <p className="text-sm text-muted-foreground">Balance del día</p>
         <p className={`text-3xl font-bold ${balance >= 0 ? "text-success" : "text-destructive"}`}>
-          {isLoading ? "—" : formatCOP(balance)}
+          {isLoading ? "—" : formatCurrency(balance)}
         </p>
       </Card>
 

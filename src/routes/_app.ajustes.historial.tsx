@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useState } from "react";
-import { formatCOP } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils";
 import { Download } from "lucide-react";
 
 export const Route = createFileRoute("/_app/ajustes/historial")({
@@ -92,9 +92,9 @@ function HistorialPage() {
       </Card>
 
       <div className="grid grid-cols-3 gap-3">
-        <Card className="p-3"><p className="text-xs text-muted-foreground">Ingresos</p><p className="font-bold text-success">{formatCOP(totales.ingreso)}</p></Card>
-        <Card className="p-3"><p className="text-xs text-muted-foreground">Costos</p><p className="font-bold">{formatCOP(totales.costo)}</p></Card>
-        <Card className="p-3"><p className="text-xs text-muted-foreground">Gastos</p><p className="font-bold text-destructive">{formatCOP(totales.gasto)}</p></Card>
+        <Card className="p-3"><p className="text-xs text-muted-foreground">Ingresos</p><p className="font-bold text-success">{formatCurrency(totales.ingreso)}</p></Card>
+        <Card className="p-3"><p className="text-xs text-muted-foreground">Costos</p><p className="font-bold">{formatCurrency(totales.costo)}</p></Card>
+        <Card className="p-3"><p className="text-xs text-muted-foreground">Gastos</p><p className="font-bold text-destructive">{formatCurrency(totales.gasto)}</p></Card>
       </div>
 
       <Card className="p-4 overflow-x-auto">
@@ -109,7 +109,7 @@ function HistorialPage() {
                 <td className="capitalize">{t.tipo}</td>
                 <td className="capitalize">{t.metodo_pago ?? "—"}</td>
                 <td>{t.descripcion ?? t.origen}</td>
-                <td className="text-right font-medium">{formatCOP(Number(t.monto))}</td>
+                <td className="text-right font-medium">{formatCurrency(Number(t.monto))}</td>
               </tr>
             ))}
             {trans.data?.length === 0 && <tr><td colSpan={5} className="text-center text-muted-foreground py-6">Sin movimientos en el rango</td></tr>}

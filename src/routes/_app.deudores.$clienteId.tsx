@@ -10,7 +10,7 @@ import { ArrowLeft } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useEmpleado } from "@/lib/empleado-store";
-import { formatCOP, cn } from "@/lib/utils";
+import { formatCurrency, cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_app/deudores/$clienteId")({
   component: DetalleDeudor,
@@ -75,7 +75,7 @@ function DetalleDeudor() {
         <p className="text-sm text-muted-foreground">Cliente</p>
         <h2 className="text-2xl font-bold">{cliente.data?.nombre ?? "..."}</h2>
         <p className="text-sm text-muted-foreground mt-2">Saldo total</p>
-        <p className={`text-3xl font-bold ${saldo > 0 ? "text-destructive" : "text-success"}`}>{formatCOP(saldo)}</p>
+        <p className={`text-3xl font-bold ${saldo > 0 ? "text-destructive" : "text-success"}`}>{formatCurrency(saldo)}</p>
         <div className="grid grid-cols-2 gap-2 mt-4">
           <PagarTodoDialog saldo={saldo} onConfirm={(metodo) => abonar.mutate({ monto: saldo, metodo })} disabled={saldo <= 0 || abonar.isPending} />
           <AbonarDialog saldo={saldo} onConfirm={(monto, metodo) => abonar.mutate({ monto, metodo })} disabled={saldo <= 0 || abonar.isPending} />
@@ -91,7 +91,7 @@ function DetalleDeudor() {
                 <div className="font-medium">{d.producto_nombre} × {d.cantidad}</div>
                 <div className="text-xs text-muted-foreground">{new Date(d.created_at as string).toLocaleString("es-CO")}</div>
               </div>
-              <div className="font-semibold">{formatCOP(Number(d.monto))}</div>
+              <div className="font-semibold">{formatCurrency(Number(d.monto))}</div>
             </div>
           ))}
           {deudas.data?.length === 0 && <p className="text-sm text-muted-foreground">Sin consumos</p>}
@@ -110,7 +110,7 @@ function PagarTodoDialog({ saldo, onConfirm, disabled }: { saldo: number; onConf
         <Button className="h-14 text-base bg-success hover:bg-success/90 text-success-foreground" disabled={disabled}>Pagar todo</Button>
       </DialogTrigger>
       <DialogContent>
-        <DialogHeader><DialogTitle>Pagar {formatCOP(saldo)}</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>Pagar {formatCurrency(saldo)}</DialogTitle></DialogHeader>
         <div className="grid grid-cols-2 gap-2">
           {(["efectivo","transferencia"] as Metodo[]).map((m) => (
             <button key={m} onClick={() => setMetodo(m)} className={cn("h-12 rounded-lg border capitalize font-medium", metodo === m ? "bg-primary text-primary-foreground border-primary" : "")}>
@@ -138,7 +138,7 @@ function AbonarDialog({ saldo, onConfirm, disabled }: { saldo: number; onConfirm
         <Button variant="outline" className="h-14 text-base" disabled={disabled}>Abonar</Button>
       </DialogTrigger>
       <DialogContent>
-        <DialogHeader><DialogTitle>Abonar (saldo {formatCOP(saldo)})</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>Abonar (saldo {formatCurrency(saldo)})</DialogTitle></DialogHeader>
         <div className="space-y-3">
           <div>
             <Label>Monto</Label>
