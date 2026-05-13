@@ -6,9 +6,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { useEmpleado } from "@/lib/empleado-store";
 import { formatCurrency, cn } from "@/lib/utils";
 
@@ -63,13 +74,53 @@ function DetalleDeudor() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const eliminarCliente = useMutation({
+    mutationFn: async () => {
+      await supabase.from("abonos").delete().eq("cliente_id", clienteId);
+      await supabase.from("deudas").delete().eq("cliente_id", clienteId);
+      const { error } = await supabase.from("clientes").delete().eq("id", clienteId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Cliente eliminado");
+      qc.invalidateQueries({ queryKey: ["deudores"] });
+      navigate({ to: "/deudores" });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const saldo = Number(cliente.data?.saldo_total ?? 0);
 
   return (
     <div className="p-4 md:p-6 max-w-3xl mx-auto space-y-4">
-      <Button asChild variant="ghost" size="sm">
-        <Link to="/deudores"><ArrowLeft className="h-4 w-4 mr-1" /> Volver</Link>
-      </Button>
+      <div className="flex items-center justify-between">
+        <Button asChild variant="ghost" size="sm">
+          <Link to="/deudores"><ArrowLeft className="h-4 w-4 mr-1" /> Volver</Link>
+        </Button>
+        {empleado.rol === "admin" && (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" size="sm" disabled={eliminarCliente.isPending}>
+                <Trash2 className="h-4 w-4 mr-2" /> Eliminar
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>¿Eliminar cliente?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Esta acción eliminará al cliente, junto con todas sus deudas y abonos asociados de forma permanente.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={() => eliminarCliente.mutate()} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                  Sí, eliminar
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
+      </div>
 
       <Card className="p-5">
         <p className="text-sm text-muted-foreground">Cliente</p>
