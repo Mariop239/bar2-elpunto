@@ -7,10 +7,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
-import { Delete, Plus, Minus, Trash2 } from "lucide-react";
+import { Delete, Plus, Minus, Trash2, CalendarIcon } from "lucide-react";
 import { toast } from "sonner";
 import { useEmpleado } from "@/lib/empleado-store";
 import { formatCurrency, cn } from "@/lib/utils";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 export const Route = createFileRoute("/_app/registro")({
   component: RegistroPage,
@@ -145,6 +149,7 @@ function FiadosTab() {
   const [clienteId, setClienteId] = useState<string>("");
   const [nuevoCliente, setNuevoCliente] = useState("");
   const [cart, setCart] = useState<Record<string, CartItem>>({});
+  const [fechaDeuda, setFechaDeuda] = useState<Date>(new Date());
 
   const productos = useQuery({
     queryKey: ["productos-activos"],
