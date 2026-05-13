@@ -13,8 +13,8 @@ type Empleado = { id: string; nombre: string; rol: "admin" | "empleado"; pin_has
 
 export const Route = createFileRoute("/pin")({
   beforeLoad: async () => {
-    const { data } = await supabase.auth.getSession();
-    if (!data.session) throw redirect({ to: "/login" });
+    const { data, error } = await supabase.auth.getUser();
+    if (error || !data.user) throw redirect({ to: "/login" });
   },
   loader: async () => {
     const { data, error } = await supabase
@@ -53,8 +53,9 @@ function PinPage() {
   }, [pin, selected, navigate, setEmpleado]);
 
   const logoutDevice = async () => {
+    setEmpleado(null);
     await supabase.auth.signOut();
-    navigate({ to: "/login" });
+    navigate({ to: "/login", replace: true });
   };
 
   if (empleados.length === 0) {
