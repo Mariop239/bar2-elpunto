@@ -92,7 +92,7 @@ function RootComponent() {
 
     // 2. Escuchar cambios de autenticación para redirigir si la sesión expira
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "SIGNED_OUT" || event === "TOKEN_REFRESH_FAILED") {
+      if (event === "SIGNED_OUT") {
         useEmpleado.getState().logout();
         router.navigate({ to: "/login", replace: true });
       }
