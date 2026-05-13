@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
+import { createFileRoute, Outlet, redirect, Navigate } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/app-shell";
 import { useEmpleado } from "@/lib/empleado-store";
@@ -14,14 +14,17 @@ export const Route = createFileRoute("/_app")({
 
 function AppLayout() {
   const empleado = useEmpleado((s) => s.empleado);
-  // Hydration guard for persisted store
   const [hydrated, setHydrated] = useState(false);
-  useEffect(() => { setHydrated(true); }, []);
+
+  useEffect(() => {
+    const unsub = useEmpleado.persist.onFinishHydration(() => setHydrated(true));
+    setHydrated(useEmpleado.persist.hasHydrated());
+    return unsub;
+  }, []);
 
   if (!hydrated) return null;
   if (!empleado) {
-    if (typeof window !== "undefined") window.location.replace("/pin");
-    return null;
+    return <Navigate to="/pin" replace />;
   }
 
   return (
