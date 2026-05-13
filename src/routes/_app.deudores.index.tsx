@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
-import { formatCOP } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils";
 import { ChevronRight } from "lucide-react";
 
 export const Route = createFileRoute("/_app/deudores/")({
@@ -32,7 +32,7 @@ function DeudoresPage() {
     <div className="p-4 md:p-6 max-w-3xl mx-auto space-y-4">
       <div className="flex items-baseline justify-between">
         <h2 className="text-2xl font-bold">Cuentas por cobrar</h2>
-        <span className="text-sm text-muted-foreground">Total: <strong className="text-foreground">{formatCOP(totalDeuda)}</strong></span>
+        <span className="text-sm text-muted-foreground">Total: <strong className="text-foreground">{formatCurrency(totalDeuda)}</strong></span>
       </div>
 
       <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar cliente..." className="h-12" />
@@ -47,7 +47,7 @@ function DeudoresPage() {
                 <div>
                   <div className="font-semibold">{c.nombre}</div>
                   <div className={`text-sm ${saldo > 0 ? "text-destructive font-semibold" : "text-muted-foreground"}`}>
-                    {formatCOP(saldo)}
+                    {formatCurrency(saldo)}
                   </div>
                 </div>
                 <ChevronRight className="h-5 w-5 text-muted-foreground" />

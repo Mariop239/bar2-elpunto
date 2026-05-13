@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Delete, Plus, Minus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useEmpleado } from "@/lib/empleado-store";
-import { formatCOP, cn } from "@/lib/utils";
+import { formatCurrency, cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_app/registro")({
   component: RegistroPage,
@@ -45,7 +45,10 @@ function CajaTab() {
   const [monto, setMonto] = useState("");
   const [descripcion, setDescripcion] = useState("");
 
-  const press = (d: string) => setMonto((m) => (m === "0" ? d : m + d));
+  const press = (d: string) => setMonto((m) => {
+    if (d === "." && m.includes(".")) return m;
+    return m === "0" && d !== "." ? d : m + d;
+  });
   const back = () => setMonto((m) => m.slice(0, -1));
   const clear = () => setMonto("");
 
@@ -109,13 +112,13 @@ function CajaTab() {
       <Card className="p-4 space-y-3">
         <div className="rounded-lg bg-muted p-4 text-right">
           <div className="text-xs text-muted-foreground uppercase">Monto</div>
-          <div className="text-3xl font-bold">{monto ? formatCOP(Number(monto)) : formatCOP(0)}</div>
+          <div className="text-3xl font-bold">{monto ? formatCurrency(Number(monto)) : formatCurrency(0)}</div>
         </div>
         <div className="grid grid-cols-3 gap-2">
           {["1","2","3","4","5","6","7","8","9"].map((d) => (
             <Button key={d} variant="outline" className="h-14 text-xl" onClick={() => press(d)}>{d}</Button>
           ))}
-          <Button variant="outline" className="h-14 text-xl" onClick={() => press("000")}>000</Button>
+          <Button variant="outline" className="h-14 text-xl" onClick={() => press(".")}>.</Button>
           <Button variant="outline" className="h-14 text-xl" onClick={() => press("0")}>0</Button>
           <Button variant="outline" className="h-14" onClick={back}><Delete /></Button>
         </div>
@@ -252,7 +255,7 @@ function FiadosTab() {
               className="p-3 rounded-xl bg-card border hover:bg-accent/30 active:scale-[.98] transition text-left"
             >
               <div className="font-semibold">{p.nombre}</div>
-              <div className="text-sm text-muted-foreground">{formatCOP(p.precio)}</div>
+              <div className="text-sm text-muted-foreground">{formatCurrency(p.precio)}</div>
             </button>
           ))}
           {productos.data?.length === 0 && (
@@ -269,7 +272,7 @@ function FiadosTab() {
             <div key={producto.id} className="flex items-center justify-between gap-2">
               <div className="flex-1 min-w-0">
                 <div className="font-medium truncate">{producto.nombre}</div>
-                <div className="text-xs text-muted-foreground">{formatCOP(producto.precio)} c/u</div>
+                <div className="text-xs text-muted-foreground">{formatCurrency(producto.precio)} c/u</div>
               </div>
               <div className="flex items-center gap-1">
                 <Button size="icon" variant="outline" className="h-9 w-9" onClick={() => dec(producto.id)}><Minus className="h-4 w-4" /></Button>
@@ -281,7 +284,7 @@ function FiadosTab() {
           ))}
         </div>
         <div className="flex justify-between font-bold border-t pt-2">
-          <span>Total</span><span>{formatCOP(total)}</span>
+          <span>Total</span><span>{formatCurrency(total)}</span>
         </div>
         <Button className="w-full h-12 text-base" onClick={() => confirmar.mutate()} disabled={confirmar.isPending || total === 0 || !clienteId}>
           {confirmar.isPending ? "Guardando..." : "Confirmar fiado"}
