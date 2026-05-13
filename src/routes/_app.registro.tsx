@@ -151,6 +151,7 @@ function FiadosTab() {
   const [cart, setCart] = useState<Record<string, CartItem>>({});
   const [fechaDeuda, setFechaDeuda] = useState<Date>(new Date());
   const [categoriaActiva, setCategoriaActiva] = useState<string>("Todos");
+  const [busqueda, setBusqueda] = useState("");
 
   const productos = useQuery({
     queryKey: ["productos-activos"],
