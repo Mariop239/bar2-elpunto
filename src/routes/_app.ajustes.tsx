@@ -24,6 +24,7 @@ function AjustesLayout() {
 
   const tabs = [
     { to: "/ajustes/catalogo", label: "Catálogo" },
+    { to: "/ajustes/categorias", label: "Categorías" },
     { to: "/ajustes/empleados", label: "Empleados" },
     { to: "/ajustes/historial", label: "Historial" },
   ] as const;
