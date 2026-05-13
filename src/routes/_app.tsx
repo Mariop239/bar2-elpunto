@@ -14,9 +14,13 @@ export const Route = createFileRoute("/_app")({
 
 function AppLayout() {
   const empleado = useEmpleado((s) => s.empleado);
-  // Hydration guard for persisted store
   const [hydrated, setHydrated] = useState(false);
-  useEffect(() => { setHydrated(true); }, []);
+
+  useEffect(() => {
+    const unsub = useEmpleado.persist.onFinishHydration(() => setHydrated(true));
+    setHydrated(useEmpleado.persist.hasHydrated());
+    return unsub;
+  }, []);
 
   if (!hydrated) return null;
   if (!empleado) {
