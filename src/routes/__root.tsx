@@ -8,6 +8,9 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 import { Toaster } from "@/components/ui/sonner";
+import { useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useEmpleado } from "@/lib/empleado-store";
 
 import appCss from "../styles.css?url";
 
@@ -74,6 +77,41 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const router = useRouter();
+
+  useEffect(() => {
+    // 1. Manejo de "Recordarme" (Limpiar sesión si no se seleccionó y es ventana nueva)
+    const rememberMe = localStorage.getItem("remember_me") === "true";
+    const activeSession = sessionStorage.getItem("active_session") === "true";
+    
+    if (!rememberMe && !activeSession) {
+      supabase.auth.signOut();
+    } else {
+      sessionStorage.setItem("active_session", "true");
+    }
+
+    // 2. Escuchar cambios de autenticación para redirigir si la sesión expira
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_OUT") {
+        useEmpleado.getState().logout();
+        router.navigate({ to: "/login", replace: true });
+      }
+    });
+
+    // 3. Controlar la inactividad: recuperar sesión al volver a la pestaña (útil en tablets)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        supabase.auth.getSession();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      subscription.unsubscribe();
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [router]);
+
   return (
     <QueryClientProvider client={queryClient}>
       <Outlet />
