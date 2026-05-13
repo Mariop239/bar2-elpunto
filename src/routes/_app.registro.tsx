@@ -115,7 +115,7 @@ function CajaTab() {
           {["1","2","3","4","5","6","7","8","9"].map((d) => (
             <Button key={d} variant="outline" className="h-14 text-xl" onClick={() => press(d)}>{d}</Button>
           ))}
-          <Button variant="outline" className="h-14 text-xl" onClick={() => press("000")}>000</Button>
+          <Button variant="outline" className="h-14 text-xl" onClick={() => press(".")}>.</Button>
           <Button variant="outline" className="h-14 text-xl" onClick={() => press("0")}>0</Button>
           <Button variant="outline" className="h-14" onClick={back}><Delete /></Button>
         </div>

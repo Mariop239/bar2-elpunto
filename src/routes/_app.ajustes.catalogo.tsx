@@ -67,7 +67,7 @@ function CatalogoPage() {
         </div>
         <div>
           <Label>Precio</Label>
-          <Input type="number" value={precio} onChange={(e) => setPrecio(e.target.value)} className="h-12" />
+          <Input type="number" step="0.01" value={precio} onChange={(e) => setPrecio(e.target.value)} className="h-12" />
         </div>
         <Button onClick={() => crear.mutate()} disabled={crear.isPending} className="h-12">Agregar producto</Button>
       </Card>
@@ -82,6 +82,7 @@ function CatalogoPage() {
             />
             <Input
               type="number"
+              step="0.01"
               defaultValue={p.precio}
               className="h-10 w-28"
               onBlur={(e) => Number(e.target.value) !== Number(p.precio) && update.mutate({ id: p.id, precio: Number(e.target.value) })}

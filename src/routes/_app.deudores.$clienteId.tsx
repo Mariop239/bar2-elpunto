@@ -142,7 +142,7 @@ function AbonarDialog({ saldo, onConfirm, disabled }: { saldo: number; onConfirm
         <div className="space-y-3">
           <div>
             <Label>Monto</Label>
-            <Input type="number" inputMode="numeric" value={monto} onChange={(e) => setMonto(e.target.value)} className="h-12 text-lg" />
+            <Input type="number" step="0.01" inputMode="decimal" value={monto} onChange={(e) => setMonto(e.target.value)} className="h-12 text-lg" />
           </div>
           <div className="grid grid-cols-2 gap-2">
             {(["efectivo","transferencia"] as Metodo[]).map((m) => (
