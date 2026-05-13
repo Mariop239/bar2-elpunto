@@ -4,7 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/utils";
-import { Banknote, ArrowLeftRight, ShoppingCart, Receipt, PlusCircle, Wallet } from "lucide-react";
+import { Banknote, ArrowLeftRight, ShoppingCart, Receipt, PlusCircle, Wallet, Clock, ArrowRight } from "lucide-react";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
 
 export const Route = createFileRoute("/_app/inicio")({
   component: Dashboard,
@@ -36,6 +38,19 @@ function Dashboard() {
         else if (t.tipo === "gasto") totals.gasto += m;
       }
       return totals;
+    },
+  });
+
+  const ultimasDeudas = useQuery({
+    queryKey: ["ultimas-deudas"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("deudas")
+        .select("id, monto, created_at, empleado:empleados(nombre)")
+        .order("created_at", { ascending: false })
+        .limit(3);
+      if (error) throw error;
+      return data;
     },
   });
 
@@ -82,6 +97,37 @@ function Dashboard() {
         <Button asChild size="lg" variant="outline" className="h-16 text-base">
           <Link to="/deudores"><Wallet className="h-5 w-5 mr-2" /> Cobrar fiado</Link>
         </Button>
+      </div>
+
+      <div className="pt-4">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-semibold flex items-center gap-1.5 text-muted-foreground">
+            <Clock className="h-4 w-4" /> Últimos Fiados Registrados
+          </h3>
+          <Button asChild variant="link" size="sm" className="h-auto p-0 text-xs">
+            <Link to="/ajustes/historial">Ver más <ArrowRight className="h-3 w-3 ml-1" /></Link>
+          </Button>
+        </div>
+        
+        <div className="space-y-2">
+          {ultimasDeudas.isLoading && <p className="text-xs text-muted-foreground">Cargando...</p>}
+          {!ultimasDeudas.isLoading && ultimasDeudas.data?.length === 0 && (
+            <p className="text-xs text-muted-foreground p-3 border rounded-lg bg-muted/30 text-center">No hay fiados recientes</p>
+          )}
+          {ultimasDeudas.data?.map((deuda: any) => (
+            <Card key={deuda.id} className="p-3 flex items-center justify-between border-border/50 shadow-sm">
+              <div>
+                <p className="font-medium text-sm">{formatCurrency(deuda.monto)}</p>
+                <p className="text-xs text-muted-foreground capitalize">
+                  {format(new Date(deuda.created_at), "dd MMM, HH:mm", { locale: es })}
+                </p>
+              </div>
+              <div className="text-xs font-medium px-2 py-1 bg-secondary text-secondary-foreground rounded-md">
+                {deuda.empleado?.nombre || "Sistema"}
+              </div>
+            </Card>
+          ))}
+        </div>
       </div>
     </div>
   );

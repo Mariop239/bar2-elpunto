@@ -9,7 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { useState } from "react";
 import { toast } from "sonner";
 import { formatCurrency } from "@/lib/utils";
-import { Trash2 } from "lucide-react";
+import { Trash2, Search, X } from "lucide-react";
 
 export const Route = createFileRoute("/_app/ajustes/catalogo")({
   component: CatalogoPage,
@@ -40,6 +40,7 @@ function CatalogoPage() {
   const [nombre, setNombre] = useState("");
   const [precio, setPrecio] = useState("");
   const [categoriaId, setCategoriaId] = useState("");
+  const [busqueda, setBusqueda] = useState("");
 
   const crear = useMutation({
     mutationFn: async () => {
@@ -108,8 +109,25 @@ function CatalogoPage() {
         <Button onClick={() => crear.mutate()} disabled={crear.isPending} className="h-12">Agregar</Button>
       </Card>
 
+      <div className="relative mb-4">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input 
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          placeholder="Buscar producto por nombre..."
+          className="pl-9 pr-9 h-12"
+        />
+        {busqueda && (
+          <button onClick={() => setBusqueda("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+            <X className="h-4 w-4" />
+          </button>
+        )}
+      </div>
+
       <div className="grid sm:grid-cols-2 gap-3">
-        {(productos.data ?? []).map((p: any) => (
+        {(productos.data ?? [])
+          .filter((p: any) => p.nombre.toLowerCase().includes(busqueda.toLowerCase()))
+          .map((p: any) => (
           <Card key={p.id} className="p-3 flex items-center gap-3">
             <Input
               defaultValue={p.nombre}
