@@ -45,7 +45,10 @@ function CajaTab() {
   const [monto, setMonto] = useState("");
   const [descripcion, setDescripcion] = useState("");
 
-  const press = (d: string) => setMonto((m) => (m === "0" ? d : m + d));
+  const press = (d: string) => setMonto((m) => {
+    if (d === "." && m.includes(".")) return m;
+    return m === "0" && d !== "." ? d : m + d;
+  });
   const back = () => setMonto((m) => m.slice(0, -1));
   const clear = () => setMonto("");
 
