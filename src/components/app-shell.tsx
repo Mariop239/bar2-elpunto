@@ -50,10 +50,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <Button
             variant="outline"
             size="sm"
-            className="w-full mt-3"
+            className="w-full mt-3 font-semibold text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/20"
             onClick={logoutEmp}
           >
-            <LogOut className="h-4 w-4 mr-2" /> Cambiar empleado
+            <LogOut className="h-4 w-4 mr-2" /> Cerrar Turno
           </Button>
         </div>
       </aside>
