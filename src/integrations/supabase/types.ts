@@ -66,6 +66,27 @@ export type Database = {
           },
         ]
       }
+      categorias: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          nombre: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          id?: string
+          nombre: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          nombre?: string
+        }
+        Relationships: []
+      }
       clientes: {
         Row: {
           created_at: string
@@ -184,6 +205,7 @@ export type Database = {
       productos: {
         Row: {
           activo: boolean
+          categoria_id: string | null
           created_at: string
           id: string
           nombre: string
@@ -191,6 +213,7 @@ export type Database = {
         }
         Insert: {
           activo?: boolean
+          categoria_id?: string | null
           created_at?: string
           id?: string
           nombre: string
@@ -198,12 +221,21 @@ export type Database = {
         }
         Update: {
           activo?: boolean
+          categoria_id?: string | null
           created_at?: string
           id?: string
           nombre?: string
           precio?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "productos_categoria_id_fkey"
+            columns: ["categoria_id"]
+            isOneToOne: false
+            referencedRelation: "categorias"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       transacciones: {
         Row: {

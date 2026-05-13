@@ -139,7 +139,7 @@ function CajaTab() {
 
 /* ---------- FIADOS POS ---------- */
 
-type Producto = { id: string; nombre: string; precio: number };
+type Producto = { id: string; nombre: string; precio: number; categoria: string; color: string };
 type Cliente = { id: string; nombre: string };
 type CartItem = { producto: Producto; cantidad: number };
 
@@ -150,13 +150,19 @@ function FiadosTab() {
   const [nuevoCliente, setNuevoCliente] = useState("");
   const [cart, setCart] = useState<Record<string, CartItem>>({});
   const [fechaDeuda, setFechaDeuda] = useState<Date>(new Date());
+  const [categoriaActiva, setCategoriaActiva] = useState<string>("Todos");
 
   const productos = useQuery({
     queryKey: ["productos-activos"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("productos").select("id,nombre,precio").eq("activo", true).order("nombre");
+      const { data, error } = await supabase.from("productos").select("id,nombre,precio,categorias(id,nombre,color)").eq("activo", true).order("nombre");
       if (error) throw error;
-      return (data ?? []).map((p) => ({ ...p, precio: Number(p.precio) })) as Producto[];
+      return (data ?? []).map((p: any) => ({ 
+        ...p, 
+        precio: Number(p.precio),
+        categoria: p.categorias?.nombre || "Otros",
+        color: p.categorias?.color || "slate"
+      })) as Producto[];
     },
   });
 
@@ -289,19 +295,52 @@ function FiadosTab() {
           </div>
         </Card>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-          {(productos.data ?? []).map((p) => (
+        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+          {["Todos", ...Array.from(new Set((productos.data ?? []).map((p) => p.categoria)))].map((cat) => (
             <button
-              key={p.id}
-              onClick={() => addToCart(p)}
-              className="p-3 rounded-xl bg-card border hover:bg-accent/30 active:scale-[.98] transition text-left"
+              key={cat}
+              onClick={() => setCategoriaActiva(cat)}
+              className={cn(
+                "px-4 py-2 rounded-full whitespace-nowrap text-sm font-medium transition-colors",
+                categoriaActiva === cat
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:bg-accent"
+              )}
             >
-              <div className="font-semibold">{p.nombre}</div>
-              <div className="text-sm text-muted-foreground">{formatCurrency(p.precio)}</div>
+              {cat}
             </button>
           ))}
-          {productos.data?.length === 0 && (
-            <p className="col-span-full text-sm text-muted-foreground p-4">Sin productos. Crea algunos en Ajustes.</p>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          {(productos.data ?? [])
+            .filter((p) => categoriaActiva === "Todos" || p.categoria === categoriaActiva)
+            .map((p) => {
+              const bgMap: Record<string, string> = {
+                blue: "bg-blue-100 hover:bg-blue-200 text-blue-900 border-blue-200",
+                orange: "bg-orange-100 hover:bg-orange-200 text-orange-900 border-orange-200",
+                green: "bg-green-100 hover:bg-green-200 text-green-900 border-green-200",
+                red: "bg-red-100 hover:bg-red-200 text-red-900 border-red-200",
+                slate: "bg-slate-100 hover:bg-slate-200 text-slate-900 border-slate-200",
+              };
+              const colorClass = bgMap[p.color] || bgMap.slate;
+              
+              return (
+                <button
+                  key={p.id}
+                  onClick={() => addToCart(p)}
+                  className={cn(
+                    "p-3 rounded-xl border active:scale-[.98] transition text-left flex flex-col h-full",
+                    colorClass
+                  )}
+                >
+                  <div className="font-semibold flex-1 leading-tight">{p.nombre}</div>
+                  <div className="text-sm opacity-80 mt-1">{formatCurrency(p.precio)}</div>
+                </button>
+              );
+            })}
+          {productos.data?.filter((p) => categoriaActiva === "Todos" || p.categoria === categoriaActiva).length === 0 && (
+            <p className="col-span-full text-sm text-muted-foreground p-4">No hay productos en esta categoría.</p>
           )}
         </div>
       </div>
