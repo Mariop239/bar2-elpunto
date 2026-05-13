@@ -6,8 +6,8 @@ import { useEffect, useState } from "react";
 
 export const Route = createFileRoute("/_app")({
   beforeLoad: async () => {
-    const { data } = await supabase.auth.getSession();
-    if (!data.session) throw redirect({ to: "/login" });
+    const { data, error } = await supabase.auth.getUser();
+    if (error || !data.user) throw redirect({ to: "/login" });
   },
   component: AppLayout,
 });
@@ -20,7 +20,7 @@ function AppLayout() {
 
   if (!hydrated) return null;
   if (!empleado) {
-    if (typeof window !== "undefined") window.location.href = "/pin";
+    if (typeof window !== "undefined") window.location.replace("/pin");
     return null;
   }
 
