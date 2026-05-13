@@ -21,6 +21,7 @@ import { Route as AppAjustesIndexRouteImport } from './routes/_app.ajustes.index
 import { Route as AppDeudoresClienteIdRouteImport } from './routes/_app.deudores.$clienteId'
 import { Route as AppAjustesHistorialRouteImport } from './routes/_app.ajustes.historial'
 import { Route as AppAjustesEmpleadosRouteImport } from './routes/_app.ajustes.empleados'
+import { Route as AppAjustesCategoriasRouteImport } from './routes/_app.ajustes.categorias'
 import { Route as AppAjustesCatalogoRouteImport } from './routes/_app.ajustes.catalogo'
 
 const PinRoute = PinRouteImport.update({
@@ -82,6 +83,11 @@ const AppAjustesEmpleadosRoute = AppAjustesEmpleadosRouteImport.update({
   path: '/empleados',
   getParentRoute: () => AppAjustesRoute,
 } as any)
+const AppAjustesCategoriasRoute = AppAjustesCategoriasRouteImport.update({
+  id: '/categorias',
+  path: '/categorias',
+  getParentRoute: () => AppAjustesRoute,
+} as any)
 const AppAjustesCatalogoRoute = AppAjustesCatalogoRouteImport.update({
   id: '/catalogo',
   path: '/catalogo',
@@ -96,6 +102,7 @@ export interface FileRoutesByFullPath {
   '/inicio': typeof AppInicioRoute
   '/registro': typeof AppRegistroRoute
   '/ajustes/catalogo': typeof AppAjustesCatalogoRoute
+  '/ajustes/categorias': typeof AppAjustesCategoriasRoute
   '/ajustes/empleados': typeof AppAjustesEmpleadosRoute
   '/ajustes/historial': typeof AppAjustesHistorialRoute
   '/deudores/$clienteId': typeof AppDeudoresClienteIdRoute
@@ -109,6 +116,7 @@ export interface FileRoutesByTo {
   '/inicio': typeof AppInicioRoute
   '/registro': typeof AppRegistroRoute
   '/ajustes/catalogo': typeof AppAjustesCatalogoRoute
+  '/ajustes/categorias': typeof AppAjustesCategoriasRoute
   '/ajustes/empleados': typeof AppAjustesEmpleadosRoute
   '/ajustes/historial': typeof AppAjustesHistorialRoute
   '/deudores/$clienteId': typeof AppDeudoresClienteIdRoute
@@ -125,6 +133,7 @@ export interface FileRoutesById {
   '/_app/inicio': typeof AppInicioRoute
   '/_app/registro': typeof AppRegistroRoute
   '/_app/ajustes/catalogo': typeof AppAjustesCatalogoRoute
+  '/_app/ajustes/categorias': typeof AppAjustesCategoriasRoute
   '/_app/ajustes/empleados': typeof AppAjustesEmpleadosRoute
   '/_app/ajustes/historial': typeof AppAjustesHistorialRoute
   '/_app/deudores/$clienteId': typeof AppDeudoresClienteIdRoute
@@ -141,6 +150,7 @@ export interface FileRouteTypes {
     | '/inicio'
     | '/registro'
     | '/ajustes/catalogo'
+    | '/ajustes/categorias'
     | '/ajustes/empleados'
     | '/ajustes/historial'
     | '/deudores/$clienteId'
@@ -154,6 +164,7 @@ export interface FileRouteTypes {
     | '/inicio'
     | '/registro'
     | '/ajustes/catalogo'
+    | '/ajustes/categorias'
     | '/ajustes/empleados'
     | '/ajustes/historial'
     | '/deudores/$clienteId'
@@ -169,6 +180,7 @@ export interface FileRouteTypes {
     | '/_app/inicio'
     | '/_app/registro'
     | '/_app/ajustes/catalogo'
+    | '/_app/ajustes/categorias'
     | '/_app/ajustes/empleados'
     | '/_app/ajustes/historial'
     | '/_app/deudores/$clienteId'
@@ -269,6 +281,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAjustesEmpleadosRouteImport
       parentRoute: typeof AppAjustesRoute
     }
+    '/_app/ajustes/categorias': {
+      id: '/_app/ajustes/categorias'
+      path: '/categorias'
+      fullPath: '/ajustes/categorias'
+      preLoaderRoute: typeof AppAjustesCategoriasRouteImport
+      parentRoute: typeof AppAjustesRoute
+    }
     '/_app/ajustes/catalogo': {
       id: '/_app/ajustes/catalogo'
       path: '/catalogo'
@@ -281,6 +300,7 @@ declare module '@tanstack/react-router' {
 
 interface AppAjustesRouteChildren {
   AppAjustesCatalogoRoute: typeof AppAjustesCatalogoRoute
+  AppAjustesCategoriasRoute: typeof AppAjustesCategoriasRoute
   AppAjustesEmpleadosRoute: typeof AppAjustesEmpleadosRoute
   AppAjustesHistorialRoute: typeof AppAjustesHistorialRoute
   AppAjustesIndexRoute: typeof AppAjustesIndexRoute
@@ -288,6 +308,7 @@ interface AppAjustesRouteChildren {
 
 const AppAjustesRouteChildren: AppAjustesRouteChildren = {
   AppAjustesCatalogoRoute: AppAjustesCatalogoRoute,
+  AppAjustesCategoriasRoute: AppAjustesCategoriasRoute,
   AppAjustesEmpleadosRoute: AppAjustesEmpleadosRoute,
   AppAjustesHistorialRoute: AppAjustesHistorialRoute,
   AppAjustesIndexRoute: AppAjustesIndexRoute,
