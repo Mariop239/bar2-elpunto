@@ -15,7 +15,7 @@ type State = {
   checkExpiration: () => void;
 };
 
-const EXPIRATION_TIME_MS = 24 * 60 * 60 * 1000; // 24 horas
+const EXPIRATION_TIME_MS = 24 * 60 * 60 * 1000; // 24 horas continuas
 
 export const useEmpleado = create<State>()(
   persist(
