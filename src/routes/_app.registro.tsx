@@ -139,7 +139,7 @@ function CajaTab() {
 
 /* ---------- FIADOS POS ---------- */
 
-type Producto = { id: string; nombre: string; precio: number };
+type Producto = { id: string; nombre: string; precio: number; categoria: string; color: string };
 type Cliente = { id: string; nombre: string };
 type CartItem = { producto: Producto; cantidad: number };
 
@@ -150,13 +150,19 @@ function FiadosTab() {
   const [nuevoCliente, setNuevoCliente] = useState("");
   const [cart, setCart] = useState<Record<string, CartItem>>({});
   const [fechaDeuda, setFechaDeuda] = useState<Date>(new Date());
+  const [categoriaActiva, setCategoriaActiva] = useState<string>("Todos");
 
   const productos = useQuery({
     queryKey: ["productos-activos"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("productos").select("id,nombre,precio").eq("activo", true).order("nombre");
+      const { data, error } = await supabase.from("productos").select("id,nombre,precio,categorias(id,nombre,color)").eq("activo", true).order("nombre");
       if (error) throw error;
-      return (data ?? []).map((p) => ({ ...p, precio: Number(p.precio) })) as Producto[];
+      return (data ?? []).map((p: any) => ({ 
+        ...p, 
+        precio: Number(p.precio),
+        categoria: p.categorias?.nombre || "Otros",
+        color: p.categorias?.color || "slate"
+      })) as Producto[];
     },
   });
 
