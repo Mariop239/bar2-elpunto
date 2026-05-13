@@ -64,8 +64,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <h1 className="text-lg font-bold">El Punto</h1>
           <p className="text-xs text-muted-foreground">{empleado?.nombre} · {empleado?.rol}</p>
         </div>
-        <Button variant="ghost" size="icon" onClick={logoutEmp} aria-label="Cambiar empleado">
-          <LogOut className="h-5 w-5" />
+        <Button variant="ghost" size="sm" onClick={logoutEmp} aria-label="Cerrar Turno" className="text-destructive hover:bg-destructive/10 hover:text-destructive">
+          <LogOut className="h-4 w-4 mr-2" />
+          Salir
         </Button>
       </header>
 
