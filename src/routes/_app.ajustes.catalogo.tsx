@@ -95,7 +95,7 @@ function CatalogoPage() {
           </Card>
         ))}
       </div>
-      <p className="text-xs text-muted-foreground">Precio: {formatCurrency(0).replace("0", "...")} se formatea en COP.</p>
+      <p className="text-xs text-muted-foreground">Precio: {formatCurrency(0).replace("0", "...")} se formatea en USD.</p>
     </div>
   );
 }
