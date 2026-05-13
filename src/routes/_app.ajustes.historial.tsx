@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useState } from "react";
 import { formatCurrency } from "@/lib/utils";
-import { Download } from "lucide-react";
+import { Download, FileSpreadsheet } from "lucide-react";
+import * as XLSX from "xlsx";
 
 export const Route = createFileRoute("/_app/ajustes/historial")({
   component: HistorialPage,
@@ -19,22 +20,11 @@ function todayISO(offset = 0) {
   return d.toISOString().slice(0, 10);
 }
 
-function toCSV(rows: Record<string, any>[]): string {
-  if (!rows.length) return "";
-  const headers = Object.keys(rows[0]);
-  const esc = (v: any) => {
-    const s = v == null ? "" : String(v);
-    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-  };
-  return [headers.join(","), ...rows.map((r) => headers.map((h) => esc(r[h])).join(","))].join("\n");
-}
-
-function downloadCSV(filename: string, csv: string) {
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url; a.download = filename; a.click();
-  URL.revokeObjectURL(url);
+function formatDate(isoStr: string | null) {
+  if (!isoStr) return "";
+  const d = new Date(isoStr);
+  const pad = (n: number) => n.toString().padStart(2, "0");
+  return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 function HistorialPage() {
