@@ -41,6 +41,19 @@ function Dashboard() {
     },
   });
 
+  const ultimasDeudas = useQuery({
+    queryKey: ["ultimas-deudas"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("deudas")
+        .select("id, monto, created_at, empleado:empleados(nombre)")
+        .order("created_at", { ascending: false })
+        .limit(3);
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const t = data ?? { ingresoEfectivo: 0, ingresoTransferencia: 0, costo: 0, gasto: 0 };
   const balance = t.ingresoEfectivo + t.ingresoTransferencia - t.costo - t.gasto;
 
