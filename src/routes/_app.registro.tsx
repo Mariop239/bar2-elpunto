@@ -441,7 +441,6 @@ function CajaTab() {
         <CardContent className="space-y-2">
           <Row label="Caja Inicial" value={formatCurrency(Number(cajaInicial) || 0)} />
           <Row label="(-) Gastos" value={formatCurrency(totalEgresos)} className="text-destructive" />
-          <Row label="(+) Deudas Cobradas (efectivo)" value={formatCurrency(totalCobroDeudas)} className="text-success" />
           <Row label="(=) Efectivo Base Esperado" value={formatCurrency(dineroEsperado)} bold />
           <Separator className="my-2" />
           <Row label="Total en Caja (arqueo físico)" value={formatCurrency(totalArqueoCaja)} bold />
