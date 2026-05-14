@@ -92,17 +92,15 @@ function Dashboard() {
     },
   });
 
-  const t = data ?? { ingresoEfectivo: 0, ingresoTransferencia: 0, costo: 0, gasto: 0, cobroDeudas: 0 };
+  const t = data ?? { ingresoEfectivo: 0, ingresoTransferencia: 0, gasto: 0 };
   const hasArqueo = !!arqueo.data;
 
-  // Lógica Maestra:
-  // Venta Real = Total Arqueo - (Caja Inicial - Egresos + Cobros de Deudas)
-  // Los cobros de deudas entran a caja pero NO son venta del día.
-  const ventaReal = hasArqueo
-    ? Number(arqueo.data!.venta_real)
-    : (t.ingresoEfectivo + t.ingresoTransferencia - t.cobroDeudas); // fallback provisorio
+  // Venta Real solo se conoce con el arqueo del día.
+  const ventaReal = hasArqueo ? Number(arqueo.data!.venta_real) : null;
   const totalEgresos = hasArqueo ? Number(arqueo.data!.total_egresos) : t.gasto;
-  const efectivoEnCaja = hasArqueo ? Number(arqueo.data!.total_arqueo) : 0;
+  const cajaInicial = hasArqueo
+    ? Number(arqueo.data!.caja_inicial)
+    : (cajaInicialQ.data ?? 0);
 
   return (
     <PageTransition>
@@ -119,36 +117,26 @@ function Dashboard() {
         )}
       </div>
 
-      {/* Cards principales según Lógica Maestra */}
+      {/* Cards principales alineadas con el cierre de caja */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <Card className="p-4 bg-success/10 border-success/20 rounded-xl shadow-sm">
-          <Banknote className="h-6 w-6 text-success" />
-          <p className="mt-2 text-xs text-muted-foreground">Venta del día {!hasArqueo && "(provisional)"}</p>
-          <p className="text-2xl font-bold text-success">{isLoading || arqueo.isLoading ? "—" : formatCurrency(ventaReal)}</p>
+        <Card className="p-4 bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900/50 rounded-xl shadow-sm">
+          <Coins className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+          <p className="mt-2 text-xs text-muted-foreground">Caja Inicial</p>
+          <p className="text-2xl font-bold text-amber-700 dark:text-amber-300">
+            {cajaInicialQ.isLoading || arqueo.isLoading ? "—" : formatCurrency(cajaInicial)}
+          </p>
         </Card>
         <Card className="p-4 bg-destructive/10 border-destructive/20 rounded-xl shadow-sm">
           <Receipt className="h-6 w-6 text-destructive" />
           <p className="mt-2 text-xs text-muted-foreground">Gastos / Egresos</p>
           <p className="text-2xl font-bold text-destructive">{isLoading || arqueo.isLoading ? "—" : formatCurrency(totalEgresos)}</p>
         </Card>
-        <Card className="p-4 bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900/50 rounded-xl shadow-sm">
-          <Coins className="h-6 w-6 text-amber-600 dark:text-amber-400" />
-          <p className="mt-2 text-xs text-muted-foreground">Efectivo en Caja {!hasArqueo && "(sin arqueo)"}</p>
-          <p className="text-2xl font-bold text-amber-700 dark:text-amber-300">
-            {arqueo.isLoading ? "—" : hasArqueo ? formatCurrency(efectivoEnCaja) : "—"}
+        <Card className="p-4 bg-success/10 border-success/20 rounded-xl shadow-sm">
+          <Banknote className="h-6 w-6 text-success" />
+          <p className="mt-2 text-xs text-muted-foreground">Venta Real del día</p>
+          <p className="text-2xl font-bold text-success">
+            {arqueo.isLoading ? "—" : ventaReal !== null ? formatCurrency(ventaReal) : "Pendiente arqueo"}
           </p>
-        </Card>
-      </div>
-
-      {/* Detalle secundario de movimientos del día */}
-      <div className="grid grid-cols-2 gap-3">
-        <Card className="p-3 rounded-xl shadow-sm">
-          <p className="text-xs text-muted-foreground">Ingresos efectivo (movimientos)</p>
-          <p className="text-lg font-semibold">{isLoading ? "—" : formatCurrency(t.ingresoEfectivo)}</p>
-        </Card>
-        <Card className="p-3 rounded-xl shadow-sm">
-          <p className="text-xs text-muted-foreground">Costos (insumos)</p>
-          <p className="text-lg font-semibold">{isLoading ? "—" : formatCurrency(t.costo)}</p>
         </Card>
       </div>
 
