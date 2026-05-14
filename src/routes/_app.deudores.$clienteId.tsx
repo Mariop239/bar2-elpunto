@@ -8,10 +8,12 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { ArrowLeft, Trash2, Pencil, CalendarIcon, X } from "lucide-react";
+import { ArrowLeft, Trash2, Pencil, CalendarIcon, X, Check } from "lucide-react";
 import { useState } from "react";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import confetti from "canvas-confetti";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -69,6 +71,7 @@ function DetalleDeudor() {
     },
     onSuccess: () => {
       toast.success("Pago registrado");
+      confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
       qc.invalidateQueries({ queryKey: ["cliente", clienteId] });
       qc.invalidateQueries({ queryKey: ["deudas", clienteId] });
       qc.invalidateQueries({ queryKey: ["deudores"] });
@@ -176,8 +179,16 @@ function DetalleDeudor() {
       <Card className="p-4">
         <h3 className="font-semibold mb-3">Detalle de consumo</h3>
         <div className="space-y-2">
-          {(deudas.data ?? []).map((d) => (
-            <div key={d.id} className={cn("flex items-center justify-between text-sm border-b pb-2 last:border-0", d.estado === "pagado" && "opacity-50 line-through")}>
+          <AnimatePresence initial={false}>
+          {(deudas.data ?? []).filter((d) => d.estado === "pendiente").map((d) => (
+            <motion.div
+              key={d.id}
+              layout
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, x: -50, transition: { duration: 0.3 } }}
+              className={cn("flex items-center justify-between text-sm border-b pb-2 last:border-0")}
+            >
               <div>
                 <div className="font-medium">{d.producto_nombre} × {d.cantidad}</div>
                 <div className="text-xs text-muted-foreground">{new Date(d.created_at as string).toLocaleString("es-CO")}</div>
@@ -215,9 +226,10 @@ function DetalleDeudor() {
                   </>
                 )}
               </div>
-            </div>
+            </motion.div>
           ))}
-          {deudas.data?.length === 0 && <p className="text-sm text-muted-foreground">Sin consumos</p>}
+          </AnimatePresence>
+          {(deudas.data?.filter((d) => d.estado === "pendiente").length ?? 0) === 0 && <p className="text-sm text-muted-foreground">Sin consumos pendientes</p>}
         </div>
       </Card>
     </div>
@@ -227,8 +239,9 @@ function DetalleDeudor() {
 function PagarTodoDialog({ saldo, onConfirm, disabled }: { saldo: number; onConfirm: (m: Metodo) => void; disabled: boolean }) {
   const [open, setOpen] = useState(false);
   const [metodo, setMetodo] = useState<Metodo>("efectivo");
+  const [done, setDone] = useState(false);
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setDone(false); }}>
       <DialogTrigger asChild>
         <Button className="h-14 text-base bg-success hover:bg-success/90 text-success-foreground" disabled={disabled}>Pagar todo</Button>
       </DialogTrigger>
@@ -236,13 +249,23 @@ function PagarTodoDialog({ saldo, onConfirm, disabled }: { saldo: number; onConf
         <DialogHeader><DialogTitle>Pagar {formatCurrency(saldo)}</DialogTitle></DialogHeader>
         <div className="grid grid-cols-2 gap-2">
           {(["efectivo","transferencia"] as Metodo[]).map((m) => (
-            <button key={m} onClick={() => setMetodo(m)} className={cn("h-12 rounded-lg border capitalize font-medium", metodo === m ? "bg-primary text-primary-foreground border-primary" : "")}>
+            <button key={m} onClick={() => setMetodo(m)} disabled={done} className={cn("h-12 rounded-lg border capitalize font-medium", metodo === m ? "bg-primary text-primary-foreground border-primary" : "")}>
               {m}
             </button>
           ))}
         </div>
         <DialogFooter>
-          <Button onClick={() => { onConfirm(metodo); setOpen(false); }} className="w-full h-12">Confirmar pago</Button>
+          <Button
+            disabled={done}
+            onClick={() => {
+              onConfirm(metodo);
+              setDone(true);
+              setTimeout(() => { setOpen(false); setDone(false); }, 1500);
+            }}
+            className={cn("w-full h-12 transition-colors", done && "bg-success hover:bg-success text-success-foreground")}
+          >
+            {done ? (<><Check className="h-5 w-5" /> ¡Cobrado!</>) : "Confirmar pago"}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -253,10 +276,11 @@ function AbonarDialog({ saldo, onConfirm, disabled }: { saldo: number; onConfirm
   const [open, setOpen] = useState(false);
   const [monto, setMonto] = useState("");
   const [metodo, setMetodo] = useState<Metodo>("efectivo");
+  const [done, setDone] = useState(false);
   const valor = Number(monto);
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setDone(false); }}>
       <DialogTrigger asChild>
         <Button variant="outline" className="h-14 text-base" disabled={disabled}>Abonar</Button>
       </DialogTrigger>
@@ -265,11 +289,11 @@ function AbonarDialog({ saldo, onConfirm, disabled }: { saldo: number; onConfirm
         <div className="space-y-3">
           <div>
             <Label>Monto</Label>
-            <Input type="number" step="0.01" inputMode="decimal" value={monto} onChange={(e) => setMonto(e.target.value)} className="h-12 text-lg" />
+            <Input type="number" step="0.01" inputMode="decimal" value={monto} onChange={(e) => setMonto(e.target.value)} disabled={done} className="h-12 text-lg" />
           </div>
           <div className="grid grid-cols-2 gap-2">
             {(["efectivo","transferencia"] as Metodo[]).map((m) => (
-              <button key={m} onClick={() => setMetodo(m)} className={cn("h-12 rounded-lg border capitalize font-medium", metodo === m ? "bg-primary text-primary-foreground border-primary" : "")}>
+              <button key={m} onClick={() => setMetodo(m)} disabled={done} className={cn("h-12 rounded-lg border capitalize font-medium", metodo === m ? "bg-primary text-primary-foreground border-primary" : "")}>
                 {m}
               </button>
             ))}
@@ -277,11 +301,15 @@ function AbonarDialog({ saldo, onConfirm, disabled }: { saldo: number; onConfirm
         </div>
         <DialogFooter>
           <Button
-            disabled={!valor || valor <= 0 || valor > saldo}
-            onClick={() => { onConfirm(valor, metodo); setOpen(false); setMonto(""); }}
-            className="w-full h-12"
+            disabled={done || !valor || valor <= 0 || valor > saldo}
+            onClick={() => {
+              onConfirm(valor, metodo);
+              setDone(true);
+              setTimeout(() => { setOpen(false); setMonto(""); setDone(false); }, 1500);
+            }}
+            className={cn("w-full h-12 transition-colors", done && "bg-success hover:bg-success text-success-foreground")}
           >
-            Confirmar abono
+            {done ? (<><Check className="h-5 w-5" /> ¡Cobrado!</>) : "Confirmar abono"}
           </Button>
         </DialogFooter>
       </DialogContent>
