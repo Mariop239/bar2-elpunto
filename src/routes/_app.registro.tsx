@@ -319,7 +319,7 @@ function FiadosTab() {
           ))}
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-2">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-2 md:[&>*]:max-w-[180px] lg:[&>*]:max-w-none md:[&>*]:w-full">
           {(productos.data ?? [])
             .filter((p) => categoriaActiva === "Todos" || p.categoria === categoriaActiva)
             .filter((p) => p.nombre.toLowerCase().includes(busqueda.toLowerCase()))
