@@ -338,7 +338,7 @@ function FiadosTab() {
           ))}
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-2">
           {(productos.data ?? [])
             .filter((p) => categoriaActiva === "Todos" || p.categoria === categoriaActiva)
             .filter((p) => p.nombre.toLowerCase().includes(busqueda.toLowerCase()))
@@ -354,18 +354,18 @@ function FiadosTab() {
                 pink: "bg-pink-100 hover:bg-pink-200 text-pink-900 border-pink-200",
               };
               const colorClass = bgMap[p.color] || bgMap.slate;
-              
+
               return (
                 <button
                   key={p.id}
                   onClick={() => addToCart(p)}
                   className={cn(
-                    "p-3 rounded-xl border active:scale-[.98] transition text-left flex flex-col h-full",
+                    "p-3 rounded-xl border shadow-sm active:scale-[.98] transition text-left flex flex-col h-full min-h-[88px]",
                     colorClass
                   )}
                 >
-                  <div className="font-semibold flex-1 leading-tight">{p.nombre}</div>
-                  <div className="text-sm opacity-80 mt-1">{formatCurrency(p.precio)}</div>
+                  <div className="font-semibold text-sm md:text-base leading-tight line-clamp-2 mb-2">{p.nombre}</div>
+                  <div className="text-sm font-medium opacity-90 mt-auto">{formatCurrency(p.precio)}</div>
                 </button>
               );
             })}
