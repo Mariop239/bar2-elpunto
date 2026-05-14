@@ -4,9 +4,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/utils";
-import { Banknote, ArrowLeftRight, ShoppingCart, Receipt, PlusCircle, Wallet, Clock, ArrowRight, Briefcase, Coins } from "lucide-react";
+import { Banknote, ArrowLeftRight, ShoppingCart, Receipt, PlusCircle, Wallet, Clock, ArrowRight, Briefcase, Coins, TrendingUp } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { PageTransition } from "@/components/page-transition";
 
 export const Route = createFileRoute("/_app/inicio")({
   component: Dashboard,
@@ -82,6 +83,7 @@ function Dashboard() {
   ];
 
   return (
+    <PageTransition>
     <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-5">
       <div>
         <h2 className="text-2xl font-bold">Resumen del día</h2>
@@ -111,8 +113,9 @@ function Dashboard() {
           <p className="mt-2 text-xs text-muted-foreground">Efectivo Actual en Caja</p>
           <p className="text-lg font-bold text-amber-700 dark:text-amber-300">{isLoading ? "—" : formatCurrency(efectivoEnCaja)}</p>
         </Card>
-        <Card className="p-4">
-          <p className="text-sm text-muted-foreground">Balance del día</p>
+        <Card className="p-4 rounded-xl shadow-sm">
+          <TrendingUp className={`h-5 w-5 ${balance >= 0 ? "text-success" : "text-destructive"}`} />
+          <p className="mt-2 text-xs text-muted-foreground">Balance del día</p>
           <p className={`text-2xl font-bold ${balance >= 0 ? "text-success" : "text-destructive"}`}>
             {isLoading ? "—" : formatCurrency(balance)}
           </p>
@@ -159,5 +162,6 @@ function Dashboard() {
         </div>
       </div>
     </div>
+    </PageTransition>
   );
 }

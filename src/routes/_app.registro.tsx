@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
-import { Delete, Plus, Minus, Trash2, CalendarIcon, Search, X, Briefcase } from "lucide-react";
+import { Delete, Plus, Minus, Trash2, CalendarIcon, Search, X } from "lucide-react";
+import { PageTransition } from "@/components/page-transition";
 import { toast } from "sonner";
 import { useEmpleado } from "@/lib/empleado-store";
 import { formatCurrency, cn } from "@/lib/utils";
@@ -25,6 +26,7 @@ type Metodo = "efectivo" | "transferencia";
 
 function RegistroPage() {
   return (
+    <PageTransition>
     <div className="p-4 md:p-6 max-w-5xl mx-auto">
       <h2 className="text-2xl font-bold mb-4">Registro</h2>
       <Tabs defaultValue="caja" className="w-full">
@@ -36,6 +38,7 @@ function RegistroPage() {
         <TabsContent value="fiados" className="mt-4"><FiadosTab /></TabsContent>
       </Tabs>
     </div>
+    </PageTransition>
   );
 }
 
@@ -79,7 +82,7 @@ function CajaTab() {
     { v: "ingreso", label: "Ingreso", cls: "data-[on=true]:bg-success data-[on=true]:text-success-foreground" },
     { v: "costo", label: "Costo", cls: "data-[on=true]:bg-warning data-[on=true]:text-warning-foreground" },
     { v: "gasto", label: "Gasto", cls: "data-[on=true]:bg-destructive data-[on=true]:text-destructive-foreground" },
-    { v: "fondo_caja", label: "Fondo Caja", cls: "data-[on=true]:bg-indigo-600 data-[on=true]:text-white", icon: Briefcase },
+    { v: "fondo_caja", label: "Fondo Caja", cls: "data-[on=true]:bg-indigo-600 data-[on=true]:text-white" },
   ];
 
   // Fondo de caja siempre es efectivo
@@ -94,8 +97,8 @@ function CajaTab() {
               key={t.v}
               data-on={tipo === t.v}
               onClick={() => setTipo(t.v)}
-              className={cn("h-14 rounded-lg border font-semibold flex items-center justify-center gap-1.5 text-sm", t.cls)}
-            >{t.icon && <t.icon className="h-4 w-4" />}{t.label}</button>
+              className={cn("h-14 rounded-lg border font-semibold flex items-center justify-center text-sm", t.cls)}
+            >{t.label}</button>
           ))}
         </div>
 
@@ -335,7 +338,7 @@ function FiadosTab() {
           ))}
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-2">
           {(productos.data ?? [])
             .filter((p) => categoriaActiva === "Todos" || p.categoria === categoriaActiva)
             .filter((p) => p.nombre.toLowerCase().includes(busqueda.toLowerCase()))
@@ -351,18 +354,18 @@ function FiadosTab() {
                 pink: "bg-pink-100 hover:bg-pink-200 text-pink-900 border-pink-200",
               };
               const colorClass = bgMap[p.color] || bgMap.slate;
-              
+
               return (
                 <button
                   key={p.id}
                   onClick={() => addToCart(p)}
                   className={cn(
-                    "p-3 rounded-xl border active:scale-[.98] transition text-left flex flex-col h-full",
+                    "p-3 rounded-xl border shadow-sm active:scale-[.98] transition text-left flex flex-col h-full min-h-[88px]",
                     colorClass
                   )}
                 >
-                  <div className="font-semibold flex-1 leading-tight">{p.nombre}</div>
-                  <div className="text-sm opacity-80 mt-1">{formatCurrency(p.precio)}</div>
+                  <div className="font-semibold text-sm md:text-base leading-tight line-clamp-2 mb-2">{p.nombre}</div>
+                  <div className="text-sm font-medium opacity-90 mt-auto">{formatCurrency(p.precio)}</div>
                 </button>
               );
             })}
