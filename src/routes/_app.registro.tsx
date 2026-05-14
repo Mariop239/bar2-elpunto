@@ -60,8 +60,9 @@ function CajaTab() {
     mutationFn: async () => {
       const m = Number(monto);
       if (!m || m <= 0) throw new Error("Ingresa un monto válido");
+      const metodoFinal = tipo === "fondo_caja" ? "efectivo" : metodo;
       const { error } = await supabase.from("transacciones").insert({
-        tipo, metodo_pago: metodo, monto: m, descripcion: descripcion || null, empleado_id: empleado.id, origen: "manual",
+        tipo, metodo_pago: metodoFinal, monto: m, descripcion: descripcion || null, empleado_id: empleado.id, origen: "manual",
       });
       if (error) throw error;
     },
