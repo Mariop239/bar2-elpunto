@@ -38,6 +38,7 @@ function RegistroPage() {
         <TabsContent value="fiados" className="mt-4"><FiadosTab /></TabsContent>
       </Tabs>
     </div>
+    </PageTransition>
   );
 }
 
