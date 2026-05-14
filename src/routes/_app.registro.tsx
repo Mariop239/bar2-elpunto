@@ -95,8 +95,8 @@ function CajaTab() {
               key={t.v}
               data-on={tipo === t.v}
               onClick={() => setTipo(t.v)}
-              className={cn("h-14 rounded-lg border font-semibold flex items-center justify-center gap-1.5 text-sm", t.cls)}
-            >{t.icon && <t.icon className="h-4 w-4" />}{t.label}</button>
+              className={cn("h-14 rounded-lg border font-semibold flex items-center justify-center text-sm", t.cls)}
+            >{t.label}</button>
           ))}
         </div>
 
