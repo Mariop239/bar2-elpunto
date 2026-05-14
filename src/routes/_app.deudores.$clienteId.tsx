@@ -179,8 +179,16 @@ function DetalleDeudor() {
       <Card className="p-4">
         <h3 className="font-semibold mb-3">Detalle de consumo</h3>
         <div className="space-y-2">
-          {(deudas.data ?? []).map((d) => (
-            <div key={d.id} className={cn("flex items-center justify-between text-sm border-b pb-2 last:border-0", d.estado === "pagado" && "opacity-50 line-through")}>
+          <AnimatePresence initial={false}>
+          {(deudas.data ?? []).filter((d) => d.estado === "pendiente").map((d) => (
+            <motion.div
+              key={d.id}
+              layout
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, x: -50, transition: { duration: 0.3 } }}
+              className={cn("flex items-center justify-between text-sm border-b pb-2 last:border-0")}
+            >
               <div>
                 <div className="font-medium">{d.producto_nombre} × {d.cantidad}</div>
                 <div className="text-xs text-muted-foreground">{new Date(d.created_at as string).toLocaleString("es-CO")}</div>
