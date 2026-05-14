@@ -8,10 +8,12 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { ArrowLeft, Trash2, Pencil, CalendarIcon, X } from "lucide-react";
+import { ArrowLeft, Trash2, Pencil, CalendarIcon, X, Check } from "lucide-react";
 import { useState } from "react";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import confetti from "canvas-confetti";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   AlertDialog,
   AlertDialogAction,
