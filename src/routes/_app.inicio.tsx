@@ -83,6 +83,7 @@ function Dashboard() {
   ];
 
   return (
+    <PageTransition>
     <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-5">
       <div>
         <h2 className="text-2xl font-bold">Resumen del día</h2>
