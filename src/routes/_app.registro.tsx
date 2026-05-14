@@ -361,20 +361,24 @@ function CajaTab() {
         </CardHeader>
         <CardContent className="space-y-2">
           <Row label="Caja Inicial" value={formatCurrency(Number(cajaInicial) || 0)} />
-          <Row label="(-) Total Egresos" value={formatCurrency(totalEgresos)} className="text-destructive" />
-          <Row label="= Dinero Base Esperado" value={formatCurrency(dineroBaseEsperado)} bold />
+          <Row label="(-) Gastos" value={formatCurrency(totalEgresos)} className="text-destructive" />
+          <Row label="(+) Deudas Cobradas (efectivo)" value={formatCurrency(totalCobroDeudas)} className="text-success" />
+          <Row label="(=) Efectivo Base Esperado" value={formatCurrency(dineroEsperado)} bold />
           <Separator className="my-2" />
-          <Row label="Total Arqueo (físico)" value={formatCurrency(totalArqueo)} bold />
+          <Row label="Total en Caja (arqueo físico)" value={formatCurrency(totalArqueoCaja)} bold />
           <Separator className="my-2" />
           <div className="flex justify-between items-center bg-success/10 rounded-lg p-3">
             <span className="text-base font-bold">VENTA REAL DEL DÍA</span>
-            <span className={cn("text-2xl font-extrabold", ventaReal >= 0 ? "text-success" : "text-destructive")}>
-              {formatCurrency(ventaReal)}
+            <span className={cn("text-2xl font-extrabold", ventaRealDelDia >= 0 ? "text-success" : "text-destructive")}>
+              {formatCurrency(ventaRealDelDia)}
             </span>
           </div>
+          <p className="text-center text-xs text-muted-foreground -mt-1">
+            = Total en Caja − Efectivo Base Esperado
+          </p>
           <p className="text-center text-sm pt-2">
             Saldo para iniciar mañana:{" "}
-            <span className="font-bold text-primary">{formatCurrency(totalArqueo)}</span>
+            <span className="font-bold text-primary">{formatCurrency(totalArqueoCaja)}</span>
           </p>
           <Button onClick={() => finalizarDia.mutate()} disabled={finalizarDia.isPending} className="w-full h-12 text-base mt-2">
             {finalizarDia.isPending ? "Guardando..." : "Finalizar Día"}
