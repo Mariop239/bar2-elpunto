@@ -165,7 +165,16 @@ function DetalleDeudor() {
                 <div className="font-medium">{d.producto_nombre} × {d.cantidad}</div>
                 <div className="text-xs text-muted-foreground">{new Date(d.created_at as string).toLocaleString("es-CO")}</div>
               </div>
-              <div className="font-semibold">{formatCurrency(Number(d.monto))}</div>
+              <div className="flex items-center gap-2">
+                <div className="font-semibold">{formatCurrency(Number(d.monto))}</div>
+                {empleado.rol === "admin" && d.estado === "pendiente" && (
+                  <EditarDeudaDialog
+                    deuda={{ id: d.id, cantidad: d.cantidad, precio_unitario: Number(d.precio_unitario), created_at: d.created_at as string, producto_nombre: d.producto_nombre }}
+                    onSave={(payload) => editarDeuda.mutate(payload)}
+                    pending={editarDeuda.isPending}
+                  />
+                )}
+              </div>
             </div>
           ))}
           {deudas.data?.length === 0 && <p className="text-sm text-muted-foreground">Sin consumos</p>}
