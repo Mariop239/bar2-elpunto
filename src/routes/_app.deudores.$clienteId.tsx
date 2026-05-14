@@ -185,11 +185,34 @@ function DetalleDeudor() {
               <div className="flex items-center gap-2">
                 <div className="font-semibold">{formatCurrency(Number(d.monto))}</div>
                 {empleado.rol === "admin" && d.estado === "pendiente" && (
-                  <EditarDeudaDialog
-                    deuda={{ id: d.id, cantidad: d.cantidad, precio_unitario: Number(d.precio_unitario), created_at: d.created_at as string, producto_nombre: d.producto_nombre }}
-                    onSave={(payload) => editarDeuda.mutate(payload)}
-                    pending={editarDeuda.isPending}
-                  />
+                  <>
+                    <EditarDeudaDialog
+                      deuda={{ id: d.id, cantidad: d.cantidad, precio_unitario: Number(d.precio_unitario), created_at: d.created_at as string, producto_nombre: d.producto_nombre }}
+                      onSave={(payload) => editarDeuda.mutate(payload)}
+                      pending={editarDeuda.isPending}
+                    />
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10" disabled={eliminarDeuda.isPending}>
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>¿Eliminar este registro?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Se eliminará "{d.producto_nombre} × {d.cantidad}" por {formatCurrency(Number(d.monto))} y se recalculará el saldo del cliente.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => eliminarDeuda.mutate(d.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                            Sí, eliminar
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </>
                 )}
               </div>
             </div>
