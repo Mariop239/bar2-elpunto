@@ -63,20 +63,30 @@ function Dashboard() {
     },
   });
 
-  // Caja inicial = total_arqueo del último cierre anterior a hoy
+  // Caja inicial = valor ingresado hoy en /registro (localStorage),
+  // o el total_arqueo del último cierre anterior a hoy como fallback.
   const cajaInicialQ = useQuery({
     queryKey: ["caja-inicial-hoy"],
     queryFn: async () => {
+      const fecha = todayDate();
+      const local =
+        typeof window !== "undefined"
+          ? localStorage.getItem(`caja_inicial_${fecha}`)
+          : null;
+      if (local && !Number.isNaN(Number(local)) && Number(local) > 0) {
+        return Number(local);
+      }
       const { data, error } = await supabase
         .from("historial_cajas")
         .select("total_arqueo,fecha")
-        .lt("fecha", todayDate())
+        .lt("fecha", fecha)
         .order("fecha", { ascending: false })
         .limit(1)
         .maybeSingle();
       if (error) throw error;
       return data ? Number(data.total_arqueo) : 0;
     },
+    refetchOnWindowFocus: true,
   });
 
   const ultimasDeudas = useQuery({
