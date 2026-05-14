@@ -255,6 +255,23 @@ function DetalleDeudor() {
           {(deudas.data?.filter((d) => d.estado === "pendiente").length ?? 0) === 0 && <p className="text-sm text-muted-foreground">Sin consumos pendientes</p>}
         </div>
       </Card>
+
+      <Card className="p-4">
+        <h3 className="font-semibold mb-3">Historial de abonos</h3>
+        <div className="space-y-2">
+          {(abonos.data ?? []).map((a) => (
+            <div key={a.id} className="flex items-center justify-between text-sm border-b pb-2 last:border-0">
+              <div>
+                <div className="font-medium">{formatCurrency(Number(a.monto))} <span className="text-xs text-muted-foreground capitalize font-normal">· {a.metodo_pago}</span></div>
+                <div className="text-xs text-muted-foreground">
+                  {new Date(a.created_at as string).toLocaleString("es-CO")} · {a.empleado_nombre}
+                </div>
+              </div>
+            </div>
+          ))}
+          {(abonos.data?.length ?? 0) === 0 && <p className="text-sm text-muted-foreground">Sin abonos registrados</p>}
+        </div>
+      </Card>
     </div>
   );
 }
