@@ -95,6 +95,22 @@ function CajaTab() {
     },
   });
 
+  // Cobros de deudas (abonos) del día — entran físicamente a caja pero NO son venta
+  const cobrosDeudasQ = useQuery({
+    queryKey: ["cobros-deudas-hoy", fecha],
+    queryFn: async () => {
+      const start = `${fecha}T00:00:00`;
+      const end = `${fecha}T23:59:59`;
+      const { data, error } = await supabase
+        .from("abonos")
+        .select("monto,metodo_pago,created_at")
+        .gte("created_at", start)
+        .lte("created_at", end);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
   const addEgreso = useMutation({
     mutationFn: async () => {
       const m = Number(egMonto);
@@ -141,13 +157,20 @@ function CajaTab() {
     () => (egresosQ.data ?? []).reduce((s, e) => s + Number(e.monto), 0),
     [egresosQ.data]
   );
+  // Solo los abonos en efectivo afectan el dinero físico esperado en caja
+  const totalCobroDeudas = useMemo(
+    () => (cobrosDeudasQ.data ?? [])
+      .filter((a: any) => a.metodo_pago === "efectivo")
+      .reduce((s: number, a: any) => s + Number(a.monto), 0),
+    [cobrosDeudasQ.data]
+  );
   const totalMonedas = useMemo(
     () => DENOMS.reduce((s, d) => s + (Number(monedas[d.key]) || 0) * d.value, 0),
     [monedas]
   );
-  const totalArqueo = (Number(bancos) || 0) + (Number(billetes) || 0) + totalMonedas;
-  const dineroBaseEsperado = (Number(cajaInicial) || 0) - totalEgresos;
-  const ventaReal = totalArqueo - dineroBaseEsperado;
+  const totalArqueoCaja = (Number(bancos) || 0) + (Number(billetes) || 0) + totalMonedas;
+  const dineroEsperado = (Number(cajaInicial) || 0) - totalEgresos + totalCobroDeudas;
+  const ventaRealDelDia = totalArqueoCaja - dineroEsperado;
 
   const finalizarDia = useMutation({
     mutationFn: async () => {
@@ -162,8 +185,8 @@ function CajaTab() {
         bancos: Number(bancos) || 0,
         billetes: Number(billetes) || 0,
         monedas: monedasDetalle,
-        total_arqueo: totalArqueo,
-        venta_real: ventaReal,
+        total_arqueo: totalArqueoCaja,
+        venta_real: ventaRealDelDia,
         empleado_id: empleado.id,
       }, { onConflict: "fecha" });
       if (error) throw error;
@@ -338,20 +361,24 @@ function CajaTab() {
         </CardHeader>
         <CardContent className="space-y-2">
           <Row label="Caja Inicial" value={formatCurrency(Number(cajaInicial) || 0)} />
-          <Row label="(-) Total Egresos" value={formatCurrency(totalEgresos)} className="text-destructive" />
-          <Row label="= Dinero Base Esperado" value={formatCurrency(dineroBaseEsperado)} bold />
+          <Row label="(-) Gastos" value={formatCurrency(totalEgresos)} className="text-destructive" />
+          <Row label="(+) Deudas Cobradas (efectivo)" value={formatCurrency(totalCobroDeudas)} className="text-success" />
+          <Row label="(=) Efectivo Base Esperado" value={formatCurrency(dineroEsperado)} bold />
           <Separator className="my-2" />
-          <Row label="Total Arqueo (físico)" value={formatCurrency(totalArqueo)} bold />
+          <Row label="Total en Caja (arqueo físico)" value={formatCurrency(totalArqueoCaja)} bold />
           <Separator className="my-2" />
           <div className="flex justify-between items-center bg-success/10 rounded-lg p-3">
             <span className="text-base font-bold">VENTA REAL DEL DÍA</span>
-            <span className={cn("text-2xl font-extrabold", ventaReal >= 0 ? "text-success" : "text-destructive")}>
-              {formatCurrency(ventaReal)}
+            <span className={cn("text-2xl font-extrabold", ventaRealDelDia >= 0 ? "text-success" : "text-destructive")}>
+              {formatCurrency(ventaRealDelDia)}
             </span>
           </div>
+          <p className="text-center text-xs text-muted-foreground -mt-1">
+            = Total en Caja − Efectivo Base Esperado
+          </p>
           <p className="text-center text-sm pt-2">
             Saldo para iniciar mañana:{" "}
-            <span className="font-bold text-primary">{formatCurrency(totalArqueo)}</span>
+            <span className="font-bold text-primary">{formatCurrency(totalArqueoCaja)}</span>
           </p>
           <Button onClick={() => finalizarDia.mutate()} disabled={finalizarDia.isPending} className="w-full h-12 text-base mt-2">
             {finalizarDia.isPending ? "Guardando..." : "Finalizar Día"}

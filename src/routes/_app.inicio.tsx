@@ -45,13 +45,20 @@ function Dashboard() {
     queryKey: ["dashboard-hoy"],
     queryFn: async () => {
       const since = startOfDayISO();
-      const { data: hoy, error } = await supabase
-        .from("transacciones")
-        .select("tipo,metodo_pago,monto")
-        .gte("created_at", since);
+      const [{ data: hoy, error }, { data: abonosHoy, error: errAb }] = await Promise.all([
+        supabase
+          .from("transacciones")
+          .select("tipo,metodo_pago,monto")
+          .gte("created_at", since),
+        supabase
+          .from("abonos")
+          .select("monto,metodo_pago")
+          .gte("created_at", since),
+      ]);
       if (error) throw error;
+      if (errAb) throw errAb;
 
-      const totals = { ingresoEfectivo: 0, ingresoTransferencia: 0, costo: 0, gasto: 0 };
+      const totals = { ingresoEfectivo: 0, ingresoTransferencia: 0, costo: 0, gasto: 0, cobroDeudas: 0 };
       for (const t of hoy ?? []) {
         const m = Number(t.monto);
         if (t.tipo === "ingreso") {
@@ -60,6 +67,7 @@ function Dashboard() {
         } else if (t.tipo === "costo") totals.costo += m;
         else if (t.tipo === "gasto") totals.gasto += m;
       }
+      for (const a of abonosHoy ?? []) totals.cobroDeudas += Number(a.monto);
       return totals;
     },
   });
@@ -77,16 +85,15 @@ function Dashboard() {
     },
   });
 
-  const t = data ?? { ingresoEfectivo: 0, ingresoTransferencia: 0, costo: 0, gasto: 0 };
+  const t = data ?? { ingresoEfectivo: 0, ingresoTransferencia: 0, costo: 0, gasto: 0, cobroDeudas: 0 };
   const hasArqueo = !!arqueo.data;
 
   // Lógica Maestra:
-  // Venta Real = Total Arqueo - (Caja Inicial - Total Egresos)
-  // Efectivo en Caja = Total Arqueo
-  // Gastos = total_egresos del arqueo o suma de gastos del día
+  // Venta Real = Total Arqueo - (Caja Inicial - Egresos + Cobros de Deudas)
+  // Los cobros de deudas entran a caja pero NO son venta del día.
   const ventaReal = hasArqueo
     ? Number(arqueo.data!.venta_real)
-    : (t.ingresoEfectivo + t.ingresoTransferencia); // fallback provisorio
+    : (t.ingresoEfectivo + t.ingresoTransferencia - t.cobroDeudas); // fallback provisorio
   const totalEgresos = hasArqueo ? Number(arqueo.data!.total_egresos) : t.gasto;
   const efectivoEnCaja = hasArqueo ? Number(arqueo.data!.total_arqueo) : 0;
 
