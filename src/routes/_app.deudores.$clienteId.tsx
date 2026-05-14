@@ -226,9 +226,10 @@ function DetalleDeudor() {
                   </>
                 )}
               </div>
-            </div>
+            </motion.div>
           ))}
-          {deudas.data?.length === 0 && <p className="text-sm text-muted-foreground">Sin consumos</p>}
+          </AnimatePresence>
+          {(deudas.data?.filter((d) => d.estado === "pendiente").length ?? 0) === 0 && <p className="text-sm text-muted-foreground">Sin consumos pendientes</p>}
         </div>
       </Card>
     </div>
