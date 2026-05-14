@@ -23,21 +23,37 @@ function Dashboard() {
     queryKey: ["dashboard-hoy"],
     queryFn: async () => {
       const since = startOfDayISO();
-      const { data, error } = await supabase
+
+      // Hoy
+      const { data: hoy, error } = await supabase
         .from("transacciones")
         .select("tipo,metodo_pago,monto")
         .gte("created_at", since);
       if (error) throw error;
-      const totals = { ingresoEfectivo: 0, ingresoTransferencia: 0, costo: 0, gasto: 0 };
-      for (const t of data ?? []) {
+
+      // Fondo inicial = suma de fondo_caja del día anterior (entre ayer 00:00 y hoy 00:00)
+      const startToday = new Date(); startToday.setHours(0,0,0,0);
+      const startYesterday = new Date(startToday); startYesterday.setDate(startYesterday.getDate() - 1);
+      const { data: fondoPrev, error: errFondo } = await supabase
+        .from("transacciones")
+        .select("monto")
+        .eq("tipo", "fondo_caja")
+        .gte("created_at", startYesterday.toISOString())
+        .lt("created_at", startToday.toISOString());
+      if (errFondo) throw errFondo;
+
+      const totals = { ingresoEfectivo: 0, ingresoTransferencia: 0, costo: 0, gasto: 0, fondoCajaHoy: 0 };
+      for (const t of hoy ?? []) {
         const m = Number(t.monto);
         if (t.tipo === "ingreso") {
           if (t.metodo_pago === "efectivo") totals.ingresoEfectivo += m;
           else totals.ingresoTransferencia += m;
         } else if (t.tipo === "costo") totals.costo += m;
         else if (t.tipo === "gasto") totals.gasto += m;
+        else if (t.tipo === "fondo_caja") totals.fondoCajaHoy += m;
       }
-      return totals;
+      const fondoInicial = (fondoPrev ?? []).reduce((s, r: any) => s + Number(r.monto), 0);
+      return { ...totals, fondoInicial };
     },
   });
 
