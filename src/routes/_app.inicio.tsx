@@ -85,16 +85,15 @@ function Dashboard() {
     },
   });
 
-  const t = data ?? { ingresoEfectivo: 0, ingresoTransferencia: 0, costo: 0, gasto: 0 };
+  const t = data ?? { ingresoEfectivo: 0, ingresoTransferencia: 0, costo: 0, gasto: 0, cobroDeudas: 0 };
   const hasArqueo = !!arqueo.data;
 
   // Lógica Maestra:
-  // Venta Real = Total Arqueo - (Caja Inicial - Total Egresos)
-  // Efectivo en Caja = Total Arqueo
-  // Gastos = total_egresos del arqueo o suma de gastos del día
+  // Venta Real = Total Arqueo - (Caja Inicial - Egresos + Cobros de Deudas)
+  // Los cobros de deudas entran a caja pero NO son venta del día.
   const ventaReal = hasArqueo
     ? Number(arqueo.data!.venta_real)
-    : (t.ingresoEfectivo + t.ingresoTransferencia); // fallback provisorio
+    : (t.ingresoEfectivo + t.ingresoTransferencia - t.cobroDeudas); // fallback provisorio
   const totalEgresos = hasArqueo ? Number(arqueo.data!.total_egresos) : t.gasto;
   const efectivoEnCaja = hasArqueo ? Number(arqueo.data!.total_arqueo) : 0;
 
