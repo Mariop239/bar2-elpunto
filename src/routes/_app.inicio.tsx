@@ -3,8 +3,9 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/utils";
-import { Banknote, ArrowLeftRight, ShoppingCart, Receipt, PlusCircle, Wallet, Clock, ArrowRight, Briefcase, Coins, TrendingUp } from "lucide-react";
+import { Banknote, ShoppingCart, Receipt, PlusCircle, Wallet, Clock, ArrowRight, Coins, TrendingUp, AlertCircle } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { PageTransition } from "@/components/page-transition";
@@ -19,31 +20,38 @@ function startOfDayISO() {
   return d.toISOString();
 }
 
+function todayDate() {
+  const d = new Date();
+  return d.toISOString().slice(0, 10);
+}
+
 function Dashboard() {
+  // Arqueo del día (si existe)
+  const arqueo = useQuery({
+    queryKey: ["arqueo-hoy"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("historial_cajas")
+        .select("*")
+        .eq("fecha", todayDate())
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Movimientos del día (para mostrar gastos/costos y fallback)
   const { data, isLoading } = useQuery({
     queryKey: ["dashboard-hoy"],
     queryFn: async () => {
       const since = startOfDayISO();
-
-      // Hoy
       const { data: hoy, error } = await supabase
         .from("transacciones")
         .select("tipo,metodo_pago,monto")
         .gte("created_at", since);
       if (error) throw error;
 
-      // Fondo inicial = suma de fondo_caja del día anterior (entre ayer 00:00 y hoy 00:00)
-      const startToday = new Date(); startToday.setHours(0,0,0,0);
-      const startYesterday = new Date(startToday); startYesterday.setDate(startYesterday.getDate() - 1);
-      const { data: fondoPrev, error: errFondo } = await supabase
-        .from("transacciones")
-        .select("monto")
-        .eq("tipo", "fondo_caja")
-        .gte("created_at", startYesterday.toISOString())
-        .lt("created_at", startToday.toISOString());
-      if (errFondo) throw errFondo;
-
-      const totals = { ingresoEfectivo: 0, ingresoTransferencia: 0, costo: 0, gasto: 0, fondoCajaHoy: 0 };
+      const totals = { ingresoEfectivo: 0, ingresoTransferencia: 0, costo: 0, gasto: 0 };
       for (const t of hoy ?? []) {
         const m = Number(t.monto);
         if (t.tipo === "ingreso") {
@@ -51,10 +59,8 @@ function Dashboard() {
           else totals.ingresoTransferencia += m;
         } else if (t.tipo === "costo") totals.costo += m;
         else if (t.tipo === "gasto") totals.gasto += m;
-        else if (t.tipo === "fondo_caja") totals.fondoCajaHoy += m;
       }
-      const fondoInicial = (fondoPrev ?? []).reduce((s, r: any) => s + Number(r.monto), 0);
-      return { ...totals, fondoInicial };
+      return totals;
     },
   });
 
@@ -71,54 +77,64 @@ function Dashboard() {
     },
   });
 
-  const t = data ?? { ingresoEfectivo: 0, ingresoTransferencia: 0, costo: 0, gasto: 0, fondoCajaHoy: 0, fondoInicial: 0 };
-  const balance = t.ingresoEfectivo + t.ingresoTransferencia - t.costo - t.gasto;
-  const efectivoEnCaja = t.fondoInicial + t.ingresoEfectivo - t.costo - t.gasto - t.fondoCajaHoy;
+  const t = data ?? { ingresoEfectivo: 0, ingresoTransferencia: 0, costo: 0, gasto: 0 };
+  const hasArqueo = !!arqueo.data;
 
-  const cards = [
-    { label: "Ingresos efectivo", value: t.ingresoEfectivo, icon: Banknote, color: "text-success", bg: "bg-success/10" },
-    { label: "Ingresos transferencia", value: t.ingresoTransferencia, icon: ArrowLeftRight, color: "text-success", bg: "bg-success/10" },
-    { label: "Costos (insumos)", value: t.costo, icon: ShoppingCart, color: "text-warning-foreground", bg: "bg-warning/30" },
-    { label: "Gastos (operativos)", value: t.gasto, icon: Receipt, color: "text-destructive", bg: "bg-destructive/10" },
-  ];
+  // Lógica Maestra:
+  // Venta Real = Total Arqueo - (Caja Inicial - Total Egresos)
+  // Efectivo en Caja = Total Arqueo
+  // Gastos = total_egresos del arqueo o suma de gastos del día
+  const ventaReal = hasArqueo
+    ? Number(arqueo.data!.venta_real)
+    : (t.ingresoEfectivo + t.ingresoTransferencia); // fallback provisorio
+  const totalEgresos = hasArqueo ? Number(arqueo.data!.total_egresos) : t.gasto;
+  const efectivoEnCaja = hasArqueo ? Number(arqueo.data!.total_arqueo) : 0;
 
   return (
     <PageTransition>
     <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-5">
-      <div>
-        <h2 className="text-2xl font-bold">Resumen del día</h2>
-        <p className="text-sm text-muted-foreground">{new Date().toLocaleDateString("es-CO", { weekday: "long", day: "numeric", month: "long" })}</p>
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div>
+          <h2 className="text-2xl font-bold">Resumen del día</h2>
+          <p className="text-sm text-muted-foreground capitalize">{new Date().toLocaleDateString("es-CO", { weekday: "long", day: "numeric", month: "long" })}</p>
+        </div>
+        {!arqueo.isLoading && !hasArqueo && (
+          <Badge variant="outline" className="gap-1.5 border-amber-400 text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/30">
+            <AlertCircle className="h-3.5 w-3.5" /> Pendiente de Arqueo
+          </Badge>
+        )}
       </div>
 
-      <div className="grid grid-cols-2 gap-3 md:gap-4">
-        {cards.map((c) => (
-          <Card key={c.label} className={`p-4 ${c.bg} border-0`}>
-            <div className="flex items-center justify-between">
-              <c.icon className={`h-6 w-6 ${c.color}`} />
-            </div>
-            <p className="mt-2 text-xs md:text-sm text-muted-foreground">{c.label}</p>
-            <p className="text-xl md:text-2xl font-bold">{isLoading ? "—" : formatCurrency(c.value)}</p>
-          </Card>
-        ))}
-      </div>
-
+      {/* Cards principales según Lógica Maestra */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <Card className="p-4 bg-indigo-50 dark:bg-indigo-950/30 border-indigo-200 dark:border-indigo-900/50">
-          <Briefcase className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
-          <p className="mt-2 text-xs text-muted-foreground">Fondo Inicial de Caja</p>
-          <p className="text-lg font-bold text-indigo-700 dark:text-indigo-300">{isLoading ? "—" : formatCurrency(t.fondoInicial)}</p>
+        <Card className="p-4 bg-success/10 border-success/20 rounded-xl shadow-sm">
+          <Banknote className="h-6 w-6 text-success" />
+          <p className="mt-2 text-xs text-muted-foreground">Venta del día {!hasArqueo && "(provisional)"}</p>
+          <p className="text-2xl font-bold text-success">{isLoading || arqueo.isLoading ? "—" : formatCurrency(ventaReal)}</p>
         </Card>
-        <Card className="p-4 bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900/50">
-          <Coins className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-          <p className="mt-2 text-xs text-muted-foreground">Efectivo Actual en Caja</p>
-          <p className="text-lg font-bold text-amber-700 dark:text-amber-300">{isLoading ? "—" : formatCurrency(efectivoEnCaja)}</p>
+        <Card className="p-4 bg-destructive/10 border-destructive/20 rounded-xl shadow-sm">
+          <Receipt className="h-6 w-6 text-destructive" />
+          <p className="mt-2 text-xs text-muted-foreground">Gastos / Egresos</p>
+          <p className="text-2xl font-bold text-destructive">{isLoading || arqueo.isLoading ? "—" : formatCurrency(totalEgresos)}</p>
         </Card>
-        <Card className="p-4 rounded-xl shadow-sm">
-          <TrendingUp className={`h-5 w-5 ${balance >= 0 ? "text-success" : "text-destructive"}`} />
-          <p className="mt-2 text-xs text-muted-foreground">Balance del día</p>
-          <p className={`text-2xl font-bold ${balance >= 0 ? "text-success" : "text-destructive"}`}>
-            {isLoading ? "—" : formatCurrency(balance)}
+        <Card className="p-4 bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900/50 rounded-xl shadow-sm">
+          <Coins className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+          <p className="mt-2 text-xs text-muted-foreground">Efectivo en Caja {!hasArqueo && "(sin arqueo)"}</p>
+          <p className="text-2xl font-bold text-amber-700 dark:text-amber-300">
+            {arqueo.isLoading ? "—" : hasArqueo ? formatCurrency(efectivoEnCaja) : "—"}
           </p>
+        </Card>
+      </div>
+
+      {/* Detalle secundario de movimientos del día */}
+      <div className="grid grid-cols-2 gap-3">
+        <Card className="p-3 rounded-xl shadow-sm">
+          <p className="text-xs text-muted-foreground">Ingresos efectivo (movimientos)</p>
+          <p className="text-lg font-semibold">{isLoading ? "—" : formatCurrency(t.ingresoEfectivo)}</p>
+        </Card>
+        <Card className="p-3 rounded-xl shadow-sm">
+          <p className="text-xs text-muted-foreground">Costos (insumos)</p>
+          <p className="text-lg font-semibold">{isLoading ? "—" : formatCurrency(t.costo)}</p>
         </Card>
       </div>
 
@@ -140,7 +156,7 @@ function Dashboard() {
             <Link to="/ajustes/historial">Ver más <ArrowRight className="h-3 w-3 ml-1" /></Link>
           </Button>
         </div>
-        
+
         <div className="space-y-2">
           {ultimasDeudas.isLoading && <p className="text-xs text-muted-foreground">Cargando...</p>}
           {!ultimasDeudas.isLoading && ultimasDeudas.data?.length === 0 && (
