@@ -200,7 +200,7 @@ function CajaTab() {
   );
   const totalBancos = (Number(bancoPichincha) || 0) + (Number(bancoGuayaquil) || 0);
   const totalArqueoCaja = totalBancos + (Number(billetes) || 0) + totalMonedas;
-  const dineroEsperado = (Number(cajaInicial) || 0) - totalEgresos + totalCobroDeudas;
+  const dineroEsperado = (Number(cajaInicial) || 0) - totalEgresos;
   const ventaRealDelDia = totalArqueoCaja - dineroEsperado;
 
   const finalizarDia = useMutation({
