@@ -202,6 +202,48 @@ export type Database = {
         }
         Relationships: []
       }
+      historial_cajas: {
+        Row: {
+          bancos: number
+          billetes: number
+          caja_inicial: number
+          created_at: string
+          empleado_id: string | null
+          fecha: string
+          id: string
+          monedas: Json
+          total_arqueo: number
+          total_egresos: number
+          venta_real: number
+        }
+        Insert: {
+          bancos?: number
+          billetes?: number
+          caja_inicial?: number
+          created_at?: string
+          empleado_id?: string | null
+          fecha: string
+          id?: string
+          monedas?: Json
+          total_arqueo?: number
+          total_egresos?: number
+          venta_real?: number
+        }
+        Update: {
+          bancos?: number
+          billetes?: number
+          caja_inicial?: number
+          created_at?: string
+          empleado_id?: string | null
+          fecha?: string
+          id?: string
+          monedas?: Json
+          total_arqueo?: number
+          total_egresos?: number
+          venta_real?: number
+        }
+        Relationships: []
+      }
       productos: {
         Row: {
           activo: boolean
