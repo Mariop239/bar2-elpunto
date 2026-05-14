@@ -112,6 +112,23 @@ function DetalleDeudor() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const eliminarDeuda = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("deudas").delete().eq("id", id);
+      if (error) throw error;
+      const { error: rpcErr } = await supabase.rpc("recalcular_saldo_cliente", { p_cliente: clienteId });
+      if (rpcErr) throw rpcErr;
+    },
+    onSuccess: () => {
+      toast.success("Registro eliminado");
+      qc.invalidateQueries({ queryKey: ["cliente", clienteId] });
+      qc.invalidateQueries({ queryKey: ["deudas", clienteId] });
+      qc.invalidateQueries({ queryKey: ["deudores"] });
+      qc.invalidateQueries({ queryKey: ["dashboard-hoy"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const saldo = Number(cliente.data?.saldo_total ?? 0);
 
   return (
