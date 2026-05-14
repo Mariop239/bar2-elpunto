@@ -158,8 +158,26 @@ function CajaTab() {
     },
   });
 
-  const [bancos, setBancos] = useState("");
+  const [bancoPichincha, setBancoPichincha] = useState("");
+  const [bancoGuayaquil, setBancoGuayaquil] = useState("");
   const [billetes, setBilletes] = useState("");
+
+  // Sugerir Caja Inicial de hoy = Total Arqueo de ayer (último cierre guardado)
+  const ultimoCierreQ = useQuery({
+    queryKey: ["ultimo-cierre", fecha],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("historial_cajas")
+        .select("fecha,total_arqueo")
+        .lt("fecha", fecha)
+        .order("fecha", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+  const sugerenciaCajaInicial = ultimoCierreQ.data ? Number(ultimoCierreQ.data.total_arqueo) : 0;
   const [monedas, setMonedas] = useState<Record<DenomKey, string>>({
     m100: "", m050: "", m025: "", m010: "", m005: "",
   });
