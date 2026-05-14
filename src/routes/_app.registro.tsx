@@ -270,6 +270,15 @@ function CajaTab() {
               className="h-14 pl-8 text-2xl font-bold"
             />
           </div>
+          {sugerenciaCajaInicial > 0 && !cajaInicial && (
+            <button
+              type="button"
+              onClick={() => guardarCajaInicial(String(sugerenciaCajaInicial))}
+              className="mt-2 text-xs text-primary underline underline-offset-2 hover:no-underline"
+            >
+              Usar saldo del cierre anterior: {formatCurrency(sugerenciaCajaInicial)}
+            </button>
+          )}
         </CardContent>
       </Card>
 
