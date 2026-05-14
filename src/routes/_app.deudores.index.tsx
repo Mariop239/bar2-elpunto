@@ -30,7 +30,7 @@ function DeudoresPage() {
           oldestDate = new Date(Math.min(...pendingDeudas.map((d: any) => new Date(d.created_at).getTime())));
         }
         
-        const hasAlerta = oldestDate ? (new Date().getTime() - oldestDate.getTime()) > 7 * 24 * 60 * 60 * 1000 : false;
+        const hasAlerta = oldestDate ? (new Date().getTime() - oldestDate.getTime()) > 31 * 24 * 60 * 60 * 1000 : false;
         
         return {
           id: c.id,
@@ -75,7 +75,7 @@ function DeudoresPage() {
                   </div>
                   {c.hasAlerta && (
                     <div className="text-xs text-red-600 dark:text-red-500 font-medium mt-0.5">
-                      Deuda antigua (+7 días)
+                      Deuda antigua (+31 días)
                     </div>
                   )}
                   <div className={`text-sm ${saldo > 0 ? (c.hasAlerta ? "text-red-700 dark:text-red-400 font-semibold" : "text-destructive font-semibold") : "text-muted-foreground"} ${c.hasAlerta ? 'mt-0.5' : ''}`}>

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
-import { Delete, Plus, Minus, Trash2, CalendarIcon, Search, X } from "lucide-react";
+import { Delete, Plus, Minus, Trash2, CalendarIcon, Search, X, Briefcase } from "lucide-react";
 import { toast } from "sonner";
 import { useEmpleado } from "@/lib/empleado-store";
 import { formatCurrency, cn } from "@/lib/utils";
@@ -20,7 +20,7 @@ export const Route = createFileRoute("/_app/registro")({
   component: RegistroPage,
 });
 
-type TipoMov = "ingreso" | "gasto" | "costo";
+type TipoMov = "ingreso" | "gasto" | "costo" | "fondo_caja";
 type Metodo = "efectivo" | "transferencia";
 
 function RegistroPage() {
@@ -60,8 +60,9 @@ function CajaTab() {
     mutationFn: async () => {
       const m = Number(monto);
       if (!m || m <= 0) throw new Error("Ingresa un monto válido");
+      const metodoFinal = tipo === "fondo_caja" ? "efectivo" : metodo;
       const { error } = await supabase.from("transacciones").insert({
-        tipo, metodo_pago: metodo, monto: m, descripcion: descripcion || null, empleado_id: empleado.id, origen: "manual",
+        tipo, metodo_pago: metodoFinal, monto: m, descripcion: descripcion || null, empleado_id: empleado.id, origen: "manual",
       });
       if (error) throw error;
     },
@@ -74,23 +75,27 @@ function CajaTab() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const tipos: { v: TipoMov; label: string; cls: string }[] = [
+  const tipos: { v: TipoMov; label: string; cls: string; icon?: any }[] = [
     { v: "ingreso", label: "Ingreso", cls: "data-[on=true]:bg-success data-[on=true]:text-success-foreground" },
     { v: "costo", label: "Costo", cls: "data-[on=true]:bg-warning data-[on=true]:text-warning-foreground" },
     { v: "gasto", label: "Gasto", cls: "data-[on=true]:bg-destructive data-[on=true]:text-destructive-foreground" },
+    { v: "fondo_caja", label: "Fondo Caja", cls: "data-[on=true]:bg-indigo-600 data-[on=true]:text-white", icon: Briefcase },
   ];
+
+  // Fondo de caja siempre es efectivo
+  const metodoEfectivo: Metodo = tipo === "fondo_caja" ? "efectivo" : metodo;
 
   return (
     <div className="grid md:grid-cols-2 gap-4">
       <Card className="p-4 space-y-4">
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           {tipos.map((t) => (
             <button
               key={t.v}
               data-on={tipo === t.v}
               onClick={() => setTipo(t.v)}
-              className={cn("h-14 rounded-lg border font-semibold", t.cls)}
-            >{t.label}</button>
+              className={cn("h-14 rounded-lg border font-semibold flex items-center justify-center gap-1.5 text-sm", t.cls)}
+            >{t.icon && <t.icon className="h-4 w-4" />}{t.label}</button>
           ))}
         </div>
 
@@ -98,10 +103,12 @@ function CajaTab() {
           {(["efectivo","transferencia"] as Metodo[]).map((m) => (
             <button
               key={m}
-              onClick={() => setMetodo(m)}
+              onClick={() => tipo !== "fondo_caja" && setMetodo(m)}
+              disabled={tipo === "fondo_caja"}
               className={cn(
                 "h-12 rounded-lg border capitalize font-medium",
-                metodo === m ? "bg-primary text-primary-foreground border-primary" : "bg-card"
+                metodoEfectivo === m ? "bg-primary text-primary-foreground border-primary" : "bg-card",
+                tipo === "fondo_caja" && m !== "efectivo" && "opacity-40"
               )}
             >{m}</button>
           ))}

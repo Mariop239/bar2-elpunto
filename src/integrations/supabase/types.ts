@@ -304,7 +304,7 @@ export type Database = {
       estado_deuda: "pendiente" | "pagado"
       metodo_pago: "efectivo" | "transferencia"
       rol_empleado: "admin" | "empleado"
-      tipo_transaccion: "ingreso" | "gasto" | "costo"
+      tipo_transaccion: "ingreso" | "gasto" | "costo" | "fondo_caja"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -435,7 +435,7 @@ export const Constants = {
       estado_deuda: ["pendiente", "pagado"],
       metodo_pago: ["efectivo", "transferencia"],
       rol_empleado: ["admin", "empleado"],
-      tipo_transaccion: ["ingreso", "gasto", "costo"],
+      tipo_transaccion: ["ingreso", "gasto", "costo", "fondo_caja"],
     },
   },
 } as const
