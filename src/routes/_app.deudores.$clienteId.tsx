@@ -92,6 +92,26 @@ function DetalleDeudor() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const editarDeuda = useMutation({
+    mutationFn: async ({ id, cantidad, precio_unitario, created_at }: { id: string; cantidad: number; precio_unitario: number; created_at: string }) => {
+      const monto = cantidad * precio_unitario;
+      const { error } = await supabase
+        .from("deudas")
+        .update({ cantidad, monto, created_at })
+        .eq("id", id);
+      if (error) throw error;
+      const { error: rpcErr } = await supabase.rpc("recalcular_saldo_cliente", { p_cliente: clienteId });
+      if (rpcErr) throw rpcErr;
+    },
+    onSuccess: () => {
+      toast.success("Deuda actualizada");
+      qc.invalidateQueries({ queryKey: ["cliente", clienteId] });
+      qc.invalidateQueries({ queryKey: ["deudas", clienteId] });
+      qc.invalidateQueries({ queryKey: ["deudores"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const saldo = Number(cliente.data?.saldo_total ?? 0);
 
   return (
