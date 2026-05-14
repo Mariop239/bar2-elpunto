@@ -76,6 +76,9 @@ function DetalleDeudor() {
       qc.invalidateQueries({ queryKey: ["deudas", clienteId] });
       qc.invalidateQueries({ queryKey: ["deudores"] });
       qc.invalidateQueries({ queryKey: ["dashboard-hoy"] });
+      qc.invalidateQueries({ queryKey: ["arqueo-hoy"] });
+      qc.invalidateQueries({ queryKey: ["cobros-deudas-hoy"] });
+      qc.invalidateQueries({ queryKey: ["ultimas-deudas"] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
