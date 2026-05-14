@@ -1,0 +1,1 @@
+ALTER TYPE public.tipo_transaccion ADD VALUE IF NOT EXISTS 'fondo_caja';
