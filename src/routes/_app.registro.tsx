@@ -95,6 +95,22 @@ function CajaTab() {
     },
   });
 
+  // Cobros de deudas (abonos) del día — entran físicamente a caja pero NO son venta
+  const cobrosDeudasQ = useQuery({
+    queryKey: ["cobros-deudas-hoy", fecha],
+    queryFn: async () => {
+      const start = `${fecha}T00:00:00`;
+      const end = `${fecha}T23:59:59`;
+      const { data, error } = await supabase
+        .from("abonos")
+        .select("monto,metodo_pago,created_at")
+        .gte("created_at", start)
+        .lte("created_at", end);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
   const addEgreso = useMutation({
     mutationFn: async () => {
       const m = Number(egMonto);
