@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { ArrowLeft, Trash2, Pencil, CalendarIcon } from "lucide-react";
+import { ArrowLeft, Trash2, Pencil, CalendarIcon, X } from "lucide-react";
 import { useState } from "react";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -112,6 +112,23 @@ function DetalleDeudor() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const eliminarDeuda = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("deudas").delete().eq("id", id);
+      if (error) throw error;
+      const { error: rpcErr } = await supabase.rpc("recalcular_saldo_cliente", { p_cliente: clienteId });
+      if (rpcErr) throw rpcErr;
+    },
+    onSuccess: () => {
+      toast.success("Registro eliminado");
+      qc.invalidateQueries({ queryKey: ["cliente", clienteId] });
+      qc.invalidateQueries({ queryKey: ["deudas", clienteId] });
+      qc.invalidateQueries({ queryKey: ["deudores"] });
+      qc.invalidateQueries({ queryKey: ["dashboard-hoy"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const saldo = Number(cliente.data?.saldo_total ?? 0);
 
   return (
@@ -168,11 +185,34 @@ function DetalleDeudor() {
               <div className="flex items-center gap-2">
                 <div className="font-semibold">{formatCurrency(Number(d.monto))}</div>
                 {empleado.rol === "admin" && d.estado === "pendiente" && (
-                  <EditarDeudaDialog
-                    deuda={{ id: d.id, cantidad: d.cantidad, precio_unitario: Number(d.precio_unitario), created_at: d.created_at as string, producto_nombre: d.producto_nombre }}
-                    onSave={(payload) => editarDeuda.mutate(payload)}
-                    pending={editarDeuda.isPending}
-                  />
+                  <>
+                    <EditarDeudaDialog
+                      deuda={{ id: d.id, cantidad: d.cantidad, precio_unitario: Number(d.precio_unitario), created_at: d.created_at as string, producto_nombre: d.producto_nombre }}
+                      onSave={(payload) => editarDeuda.mutate(payload)}
+                      pending={editarDeuda.isPending}
+                    />
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10" disabled={eliminarDeuda.isPending}>
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>¿Eliminar este registro?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Se eliminará "{d.producto_nombre} × {d.cantidad}" por {formatCurrency(Number(d.monto))} y se recalculará el saldo del cliente.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => eliminarDeuda.mutate(d.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                            Sí, eliminar
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </>
                 )}
               </div>
             </div>
