@@ -4,9 +4,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/utils";
-import { Banknote, ArrowLeftRight, ShoppingCart, Receipt, PlusCircle, Wallet, Clock, ArrowRight, Briefcase, Coins } from "lucide-react";
+import { Banknote, ArrowLeftRight, ShoppingCart, Receipt, PlusCircle, Wallet, Clock, ArrowRight, Briefcase, Coins, TrendingUp } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { PageTransition } from "@/components/page-transition";
 
 export const Route = createFileRoute("/_app/inicio")({
   component: Dashboard,
