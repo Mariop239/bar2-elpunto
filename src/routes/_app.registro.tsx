@@ -79,7 +79,7 @@ function CajaTab() {
     { v: "ingreso", label: "Ingreso", cls: "data-[on=true]:bg-success data-[on=true]:text-success-foreground" },
     { v: "costo", label: "Costo", cls: "data-[on=true]:bg-warning data-[on=true]:text-warning-foreground" },
     { v: "gasto", label: "Gasto", cls: "data-[on=true]:bg-destructive data-[on=true]:text-destructive-foreground" },
-    { v: "fondo_caja", label: "Fondo Caja", cls: "data-[on=true]:bg-indigo-600 data-[on=true]:text-white", icon: Briefcase },
+    { v: "fondo_caja", label: "Fondo Caja", cls: "data-[on=true]:bg-indigo-600 data-[on=true]:text-white" },
   ];
 
   // Fondo de caja siempre es efectivo
