@@ -83,6 +83,7 @@ function Dashboard() {
       }
       return totals;
     },
+    refetchOnWindowFocus: true,
   });
 
   // Caja inicial = valor ingresado hoy en /registro (localStorage),
