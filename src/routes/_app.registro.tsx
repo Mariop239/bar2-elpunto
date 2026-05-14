@@ -157,7 +157,6 @@ function FiadosTab() {
   const empleado = useEmpleado((s) => s.empleado)!;
   const qc = useQueryClient();
   const [clienteId, setClienteId] = useState<string>("");
-  const [nuevoCliente, setNuevoCliente] = useState("");
   const [cart, setCart] = useState<Record<string, CartItem>>({});
   const [fechaDeuda, setFechaDeuda] = useState<Date>(new Date());
   const [categoriaActiva, setCategoriaActiva] = useState<string>("Todos");
