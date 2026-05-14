@@ -26,6 +26,7 @@ type Metodo = "efectivo" | "transferencia";
 
 function RegistroPage() {
   return (
+    <PageTransition>
     <div className="p-4 md:p-6 max-w-5xl mx-auto">
       <h2 className="text-2xl font-bold mb-4">Registro</h2>
       <Tabs defaultValue="caja" className="w-full">
