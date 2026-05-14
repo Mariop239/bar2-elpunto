@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
@@ -90,6 +90,29 @@ function CajaTab() {
   const [egDesc, setEgDesc] = useState("");
   const [egMonto, setEgMonto] = useState("");
 
+  // Sincronización en vivo entre admins: cualquier cambio en transacciones,
+  // historial_cajas o abonos invalida las queries del cierre de caja.
+  useEffect(() => {
+    const channel = supabase
+      .channel("registro-sync")
+      .on("postgres_changes", { event: "*", schema: "public", table: "transacciones" }, () => {
+        qc.invalidateQueries({ queryKey: ["egresos-hoy", fecha] });
+        qc.invalidateQueries({ queryKey: ["dashboard-hoy"] });
+        qc.invalidateQueries({ queryKey: ["historial"] });
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "historial_cajas" }, () => {
+        qc.invalidateQueries({ queryKey: ["ultimo-cierre", fecha] });
+        qc.invalidateQueries({ queryKey: ["historial"] });
+        qc.invalidateQueries({ queryKey: ["arqueo-hoy"] });
+        qc.invalidateQueries({ queryKey: ["caja-inicial-hoy"] });
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "abonos" }, () => {
+        qc.invalidateQueries({ queryKey: ["cobros-deudas-hoy", fecha] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [qc, fecha]);
+
   const egresosQ = useQuery({
     queryKey: ["egresos-hoy", fecha],
     queryFn: async () => {
@@ -105,6 +128,7 @@ function CajaTab() {
       if (error) throw error;
       return data ?? [];
     },
+    refetchOnWindowFocus: true,
   });
 
   // Cobros de deudas (abonos) del día — entran físicamente a caja pero NO son venta
@@ -121,6 +145,7 @@ function CajaTab() {
       if (error) throw error;
       return data ?? [];
     },
+    refetchOnWindowFocus: true,
   });
 
   const addEgreso = useMutation({
