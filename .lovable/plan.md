@@ -1,33 +1,56 @@
-### Arquitectura Multi-Empresa (Multi-Tenant)
+## Plan: Arqueo / Cierre de Caja
 
-Para separar los datos de diferentes negocios y permitir que cada cuenta de correo (ej. `bar2uleam@gmail.com`) tenga su propio entorno aislado (productos, empleados, clientes, deudas), implementaremos una arquitectura Multi-Tenant estándar.
+No existe aún un componente de arqueo en el proyecto, así que se creará desde cero como una nueva ruta dentro de Ajustes (sólo admin), siguiendo el patrón existente.
 
-#### 1. Cambios en la Base de Datos (Migraciones)
-- **Nuevas tablas:**
-  - `empresas`: Almacenará los negocios (`id`, `nombre`, `created_at`).
-  - `perfiles`: Vinculará el usuario de Supabase Auth (`auth.uid()`) con su respectiva empresa (`id`, `empresa_id`, `rol`).
-- **Actualización de tablas existentes:**
-  - Se añadirá la columna `empresa_id` a todas las tablas operativas: `empleados`, `categorias`, `productos`, `clientes`, `deudas`, `abonos` y `transacciones`.
-- **Migración de datos legacy:**
-  - Crearemos una empresa por defecto (ej. "El Punto") y asignaremos todos los registros actuales y usuarios existentes a esta empresa para no romper la información que ya tienes.
-- **Seguridad (RLS):**
-  - Modificaremos **todas las políticas RLS**. En lugar de permitir el acceso a cualquier usuario autenticado, las políticas exigirán que el `empresa_id` del registro coincida con el `empresa_id` del usuario que inició sesión en el dispositivo.
+### 1. Nueva ruta
+- Crear `src/routes/_app.ajustes.arqueo.tsx` con `createFileRoute("/_app/ajustes/arqueo")`.
+- Añadir tab **"Arqueo"** en `src/routes/_app.ajustes.tsx` (`{ to: "/ajustes/arqueo", label: "Arqueo" }`).
 
-#### 2. Lógica de Autenticación y Cuentas
-- **Registro de Nuevos Negocios (`/registro`):**
-  - Crearemos una nueva pantalla pública donde un usuario nuevo podrá crear su cuenta de Supabase Auth, registrar el nombre de su negocio y generar automáticamente su primer "Empleado Administrador" (para el PIN).
-- **Inicio de Sesión (`/login`):**
-  - Al iniciar sesión en el dispositivo con un correo, el sistema detectará a qué empresa pertenece y cargará **únicamente** los empleados (para el PIN) de esa empresa.
+### 2. Estado (todos números, vacíos = 0)
+Un único `useState` con objeto, o estados separados:
+- `cajaInicial`
+- `totalEgresos`
+- `arqueoBancos` (con dos sub-inputs informativos: Guayaquil + Pichincha que suman a `arqueoBancos`)
+- `arqueoBilletes`
+- `valorMonedas1`, `valorMonedas50`, `valorMonedas25`, `valorMonedas10`, `valorMonedas5`
 
-#### 3. Adaptación del Frontend
-- **Aislamiento de Datos:**
-  - Como el RLS se encargará de filtrar los datos en el backend, las consultas (`SELECT`) actuales seguirán funcionando, pero solo devolverán los datos del negocio activo.
-- **Inserción de Datos:**
-  - Se actualizará el estado global (ej. Zustand o un React Context) para mantener en memoria el `empresa_id` actual.
-  - Se modificarán las mutaciones (`INSERT`) en toda la app (crear producto, registrar deuda, crear empleado, etc.) para incluir el `empresa_id` del negocio activo.
-- **Funciones de la Base de Datos (`aplicar_abono`, `recalcular_saldo_cliente`):**
-  - Se actualizarán para que respeten y propaguen el contexto del `empresa_id`.
+Helper `num(v)` que devuelve `Number(v) || 0` para manejar inputs vacíos.
 
----
+### 3. Lógica matemática (exacta)
+```ts
+const totalMonedas    = v1 + v50 + v25 + v10 + v5;
+const totalArqueoCaja = arqueoBancos + arqueoBilletes + totalMonedas;
+const cajaMenosEgresos = cajaInicial - totalEgresos;
+const ventaDelDia     = totalArqueoCaja - cajaMenosEgresos;
+```
+Calculados con `useMemo` en cada render.
 
-**¿Estás de acuerdo con este enfoque?** Una vez lo apruebes, comenzaremos ejecutando la migración de la base de datos para estructurar todo de forma segura.
+### 4. UI (Tailwind + shadcn)
+Layout en `max-w-3xl mx-auto`, dos `Card` principales:
+
+**Card "Datos de caja"**
+- Input `cajaInicial` — label: "Caja inicial ($)"
+- Input `totalEgresos` — label: "Total egresos del día ($)"
+
+**Card "Arqueo físico y digital"**
+- Sub-sección Bancos: dos inputs (Banco Guayaquil, Banco Pichincha); `arqueoBancos = guayaquil + pichincha` mostrado como subtotal.
+- Input `arqueoBilletes` — "Total ($) en billetes físicos"
+- Sub-sección Monedas (5 inputs):
+  - "Total ($) en monedas de $1"
+  - "Total ($) en monedas de 50ctvs"
+  - "Total ($) en monedas de 25ctvs"
+  - "Total ($) en monedas de 10ctvs"
+  - "Total ($) en monedas de 5ctvs"
+- Subtotal en vivo: **"Total Arqueo Caja: $ {totalArqueoCaja.toFixed(2)}"**
+
+**Card resultado (destacada)**
+- Fondo `bg-primary/10`, borde `border-primary`, grande:
+  - "Total Venta del Día: $ {ventaDelDia.toFixed(2)}"
+- Mini-línea informativa: `Caja − Egresos = ${cajaMenosEgresos.toFixed(2)}`.
+
+Inputs: `<Input type="number" inputMode="decimal" step="0.01" min="0">` con `<Label>`. Grid `grid-cols-2 md:grid-cols-3 gap-3` para denominaciones.
+
+### Notas técnicas
+- Sin cambios de backend/DB en este paso (solo cálculo en cliente, como pidió el usuario).
+- Sólo edita: `_app.ajustes.tsx` (añadir tab) y crea `_app.ajustes.arqueo.tsx`.
+- Usa tokens del design system (no colores literales).
