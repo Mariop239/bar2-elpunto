@@ -76,6 +76,21 @@ function HistorialPage() {
     },
   });
 
+  // Arqueos del rango — fuente de verdad de la Venta Real
+  const arqueos = useQuery({
+    queryKey: ["arqueos-rango", desde, hasta],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("historial_cajas")
+        .select("fecha, venta_real, total_egresos, total_arqueo")
+        .gte("fecha", desde)
+        .lte("fecha", hasta)
+        .order("fecha", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
   const allIds = trans.data?.map((t: any) => t.id) ?? [];
   const allSelected = allIds.length > 0 && selectedIds.length === allIds.length;
 
@@ -176,13 +191,23 @@ function HistorialPage() {
   const totales = (trans.data ?? []).reduce(
     (acc, t: any) => {
       const m = Number(t.monto);
-      if (t.tipo === "ingreso") acc.ingreso += m;
-      else if (t.tipo === "costo") acc.costo += m;
+      if (t.tipo === "costo") acc.costo += m;
       else if (t.tipo === "gasto") acc.gasto += m;
       return acc;
     },
-    { ingreso: 0, costo: 0, gasto: 0 }
+    { costo: 0, gasto: 0 }
   );
+
+  const totalesArqueo = (arqueos.data ?? []).reduce(
+    (acc, a: any) => {
+      acc.ventaReal += Number(a.venta_real);
+      acc.egresos += Number(a.total_egresos);
+      return acc;
+    },
+    { ventaReal: 0, egresos: 0 }
+  );
+
+  const diasArqueados = arqueos.data?.length ?? 0;
 
   return (
     <div className="space-y-4">
@@ -202,9 +227,16 @@ function HistorialPage() {
       </Card>
 
       <div className="grid grid-cols-3 gap-3">
-        <Card className="p-3"><p className="text-xs text-muted-foreground">Ingresos</p><p className="font-bold text-success">{formatCurrency(totales.ingreso)}</p></Card>
+        <Card className="p-3">
+          <p className="text-xs text-muted-foreground">Venta Real (arqueos)</p>
+          <p className="font-bold text-success">{formatCurrency(totalesArqueo.ventaReal)}</p>
+          <p className="text-[10px] text-muted-foreground mt-0.5">{diasArqueados} día(s) arqueados</p>
+        </Card>
         <Card className="p-3"><p className="text-xs text-muted-foreground">Costos</p><p className="font-bold">{formatCurrency(totales.costo)}</p></Card>
-        <Card className="p-3"><p className="text-xs text-muted-foreground">Gastos</p><p className="font-bold text-destructive">{formatCurrency(totales.gasto)}</p></Card>
+        <Card className="p-3">
+          <p className="text-xs text-muted-foreground">Egresos</p>
+          <p className="font-bold text-destructive">{formatCurrency(totalesArqueo.egresos || totales.gasto)}</p>
+        </Card>
       </div>
 
       <div className="flex justify-between items-center mt-2 mb-2">
