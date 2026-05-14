@@ -200,7 +200,7 @@ function CajaTab() {
   );
   const totalBancos = (Number(bancoPichincha) || 0) + (Number(bancoGuayaquil) || 0);
   const totalArqueoCaja = totalBancos + (Number(billetes) || 0) + totalMonedas;
-  const dineroEsperado = (Number(cajaInicial) || 0) - totalEgresos + totalCobroDeudas;
+  const dineroEsperado = (Number(cajaInicial) || 0) - totalEgresos;
   const ventaRealDelDia = totalArqueoCaja - dineroEsperado;
 
   const finalizarDia = useMutation({
@@ -225,7 +225,7 @@ function CajaTab() {
       if (error) throw error;
 
       // Registrar movimiento de "Cierre de Caja" en el historial de transacciones
-      const desc = `Cierre de Caja — Venta Real: ${formatCurrency(ventaRealDelDia)}, Gastos: ${formatCurrency(totalEgresos)}, Cobros deudas: ${formatCurrency(totalCobroDeudas)}, Pichincha: ${formatCurrency(Number(bancoPichincha) || 0)}, Guayaquil: ${formatCurrency(Number(bancoGuayaquil) || 0)}`;
+      const desc = `Cierre de Caja — Venta Real: ${formatCurrency(ventaRealDelDia)}, Gastos: ${formatCurrency(totalEgresos)}, Pichincha: ${formatCurrency(Number(bancoPichincha) || 0)}, Guayaquil: ${formatCurrency(Number(bancoGuayaquil) || 0)}`;
       await supabase.from("transacciones").insert({
         tipo: "fondo_caja",
         metodo_pago: "efectivo",
@@ -441,7 +441,6 @@ function CajaTab() {
         <CardContent className="space-y-2">
           <Row label="Caja Inicial" value={formatCurrency(Number(cajaInicial) || 0)} />
           <Row label="(-) Gastos" value={formatCurrency(totalEgresos)} className="text-destructive" />
-          <Row label="(+) Deudas Cobradas (efectivo)" value={formatCurrency(totalCobroDeudas)} className="text-success" />
           <Row label="(=) Efectivo Base Esperado" value={formatCurrency(dineroEsperado)} bold />
           <Separator className="my-2" />
           <Row label="Total en Caja (arqueo físico)" value={formatCurrency(totalArqueoCaja)} bold />
