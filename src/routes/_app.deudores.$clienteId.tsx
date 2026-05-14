@@ -62,6 +62,19 @@ function DetalleDeudor() {
     },
   });
 
+  const abonos = useQuery({
+    queryKey: ["abonos", clienteId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("abonos")
+        .select("id,monto,metodo_pago,created_at,empleado_id,empleados(nombre)")
+        .eq("cliente_id", clienteId)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
   const abonar = useMutation({
     mutationFn: async ({ monto, metodo }: { monto: number; metodo: Metodo }) => {
       const { error } = await supabase.rpc("aplicar_abono", {
@@ -74,6 +87,7 @@ function DetalleDeudor() {
       confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
       qc.invalidateQueries({ queryKey: ["cliente", clienteId] });
       qc.invalidateQueries({ queryKey: ["deudas", clienteId] });
+      qc.invalidateQueries({ queryKey: ["abonos", clienteId] });
       qc.invalidateQueries({ queryKey: ["deudores"] });
       qc.invalidateQueries({ queryKey: ["dashboard-hoy"] });
       qc.invalidateQueries({ queryKey: ["arqueo-hoy"] });
