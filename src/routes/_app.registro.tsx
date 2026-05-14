@@ -20,7 +20,7 @@ export const Route = createFileRoute("/_app/registro")({
   component: RegistroPage,
 });
 
-type TipoMov = "ingreso" | "gasto" | "costo";
+type TipoMov = "ingreso" | "gasto" | "costo" | "fondo_caja";
 type Metodo = "efectivo" | "transferencia";
 
 function RegistroPage() {
