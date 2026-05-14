@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { formatCurrency } from "@/lib/utils";
 import { ChevronRight, AlertTriangle } from "lucide-react";
+import { motion } from "framer-motion";
+import { PageTransition } from "@/components/page-transition";
 
 export const Route = createFileRoute("/_app/deudores/")({
   component: DeudoresPage,
