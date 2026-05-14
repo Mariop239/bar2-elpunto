@@ -185,8 +185,8 @@ function CajaTab() {
         bancos: Number(bancos) || 0,
         billetes: Number(billetes) || 0,
         monedas: monedasDetalle,
-        total_arqueo: totalArqueo,
-        venta_real: ventaReal,
+        total_arqueo: totalArqueoCaja,
+        venta_real: ventaRealDelDia,
         empleado_id: empleado.id,
       }, { onConflict: "fecha" });
       if (error) throw error;
