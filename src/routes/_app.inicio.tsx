@@ -113,8 +113,9 @@ function Dashboard() {
           <p className="mt-2 text-xs text-muted-foreground">Efectivo Actual en Caja</p>
           <p className="text-lg font-bold text-amber-700 dark:text-amber-300">{isLoading ? "—" : formatCurrency(efectivoEnCaja)}</p>
         </Card>
-        <Card className="p-4">
-          <p className="text-sm text-muted-foreground">Balance del día</p>
+        <Card className="p-4 rounded-xl shadow-sm">
+          <TrendingUp className={`h-5 w-5 ${balance >= 0 ? "text-success" : "text-destructive"}`} />
+          <p className="mt-2 text-xs text-muted-foreground">Balance del día</p>
           <p className={`text-2xl font-bold ${balance >= 0 ? "text-success" : "text-destructive"}`}>
             {isLoading ? "—" : formatCurrency(balance)}
           </p>
