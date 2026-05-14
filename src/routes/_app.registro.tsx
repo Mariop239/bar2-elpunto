@@ -365,7 +365,6 @@ function CajaTab() {
               <span className="font-semibold">{formatCurrency(totalMonedas)}</span>
             </div>
           </div>
-          </div>
         </CardContent>
       </Card>
 
