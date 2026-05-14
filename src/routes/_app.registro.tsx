@@ -157,13 +157,20 @@ function CajaTab() {
     () => (egresosQ.data ?? []).reduce((s, e) => s + Number(e.monto), 0),
     [egresosQ.data]
   );
+  // Solo los abonos en efectivo afectan el dinero físico esperado en caja
+  const totalCobroDeudas = useMemo(
+    () => (cobrosDeudasQ.data ?? [])
+      .filter((a: any) => a.metodo_pago === "efectivo")
+      .reduce((s: number, a: any) => s + Number(a.monto), 0),
+    [cobrosDeudasQ.data]
+  );
   const totalMonedas = useMemo(
     () => DENOMS.reduce((s, d) => s + (Number(monedas[d.key]) || 0) * d.value, 0),
     [monedas]
   );
-  const totalArqueo = (Number(bancos) || 0) + (Number(billetes) || 0) + totalMonedas;
-  const dineroBaseEsperado = (Number(cajaInicial) || 0) - totalEgresos;
-  const ventaReal = totalArqueo - dineroBaseEsperado;
+  const totalArqueoCaja = (Number(bancos) || 0) + (Number(billetes) || 0) + totalMonedas;
+  const dineroEsperado = (Number(cajaInicial) || 0) - totalEgresos + totalCobroDeudas;
+  const ventaRealDelDia = totalArqueoCaja - dineroEsperado;
 
   const finalizarDia = useMutation({
     mutationFn: async () => {
