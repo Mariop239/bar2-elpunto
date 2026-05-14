@@ -248,3 +248,104 @@ function AbonarDialog({ saldo, onConfirm, disabled }: { saldo: number; onConfirm
     </Dialog>
   );
 }
+
+type EditarPayload = { id: string; cantidad: number; precio_unitario: number; created_at: string };
+
+function EditarDeudaDialog({
+  deuda,
+  onSave,
+  pending,
+}: {
+  deuda: { id: string; cantidad: number; precio_unitario: number; created_at: string; producto_nombre: string };
+  onSave: (p: EditarPayload) => void;
+  pending: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const [cantidad, setCantidad] = useState(String(deuda.cantidad));
+  const [fecha, setFecha] = useState<Date>(new Date(deuda.created_at));
+
+  const cantNum = Number(cantidad);
+  const monto = (cantNum || 0) * deuda.precio_unitario;
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(o) => {
+        setOpen(o);
+        if (o) {
+          setCantidad(String(deuda.cantidad));
+          setFecha(new Date(deuda.created_at));
+        }
+      }}
+    >
+      <DialogTrigger asChild>
+        <Button variant="ghost" size="icon" className="h-8 w-8">
+          <Pencil className="h-4 w-4" />
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Editar {deuda.producto_nombre}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div>
+            <Label>Cantidad</Label>
+            <Input
+              type="number"
+              min={1}
+              inputMode="numeric"
+              value={cantidad}
+              onChange={(e) => setCantidad(e.target.value)}
+              className="h-12 text-lg"
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Precio unitario: {formatCurrency(deuda.precio_unitario)} · Nuevo monto: {formatCurrency(monto)}
+            </p>
+          </div>
+          <div>
+            <Label>Fecha del registro</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className={cn("w-full justify-start text-left font-normal h-12")}>
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {format(fecha, "PPP p")}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={fecha}
+                  onSelect={(d) => {
+                    if (!d) return;
+                    const nueva = new Date(d);
+                    nueva.setHours(fecha.getHours(), fecha.getMinutes(), 0, 0);
+                    setFecha(nueva);
+                  }}
+                  initialFocus
+                  className={cn("p-3 pointer-events-auto")}
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button
+            disabled={pending || !cantNum || cantNum <= 0}
+            onClick={() => {
+              onSave({
+                id: deuda.id,
+                cantidad: cantNum,
+                precio_unitario: deuda.precio_unitario,
+                created_at: fecha.toISOString(),
+              });
+              setOpen(false);
+            }}
+            className="w-full h-12"
+          >
+            Guardar cambios
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
