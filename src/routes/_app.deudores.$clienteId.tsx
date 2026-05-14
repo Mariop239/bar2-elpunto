@@ -6,8 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { ArrowLeft, Trash2 } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { ArrowLeft, Trash2, Pencil, CalendarIcon } from "lucide-react";
 import { useState } from "react";
+import { format } from "date-fns";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -89,6 +92,26 @@ function DetalleDeudor() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const editarDeuda = useMutation({
+    mutationFn: async ({ id, cantidad, precio_unitario, created_at }: { id: string; cantidad: number; precio_unitario: number; created_at: string }) => {
+      const monto = cantidad * precio_unitario;
+      const { error } = await supabase
+        .from("deudas")
+        .update({ cantidad, monto, created_at })
+        .eq("id", id);
+      if (error) throw error;
+      const { error: rpcErr } = await supabase.rpc("recalcular_saldo_cliente", { p_cliente: clienteId });
+      if (rpcErr) throw rpcErr;
+    },
+    onSuccess: () => {
+      toast.success("Deuda actualizada");
+      qc.invalidateQueries({ queryKey: ["cliente", clienteId] });
+      qc.invalidateQueries({ queryKey: ["deudas", clienteId] });
+      qc.invalidateQueries({ queryKey: ["deudores"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const saldo = Number(cliente.data?.saldo_total ?? 0);
 
   return (
@@ -142,7 +165,16 @@ function DetalleDeudor() {
                 <div className="font-medium">{d.producto_nombre} × {d.cantidad}</div>
                 <div className="text-xs text-muted-foreground">{new Date(d.created_at as string).toLocaleString("es-CO")}</div>
               </div>
-              <div className="font-semibold">{formatCurrency(Number(d.monto))}</div>
+              <div className="flex items-center gap-2">
+                <div className="font-semibold">{formatCurrency(Number(d.monto))}</div>
+                {empleado.rol === "admin" && d.estado === "pendiente" && (
+                  <EditarDeudaDialog
+                    deuda={{ id: d.id, cantidad: d.cantidad, precio_unitario: Number(d.precio_unitario), created_at: d.created_at as string, producto_nombre: d.producto_nombre }}
+                    onSave={(payload) => editarDeuda.mutate(payload)}
+                    pending={editarDeuda.isPending}
+                  />
+                )}
+              </div>
             </div>
           ))}
           {deudas.data?.length === 0 && <p className="text-sm text-muted-foreground">Sin consumos</p>}
@@ -210,6 +242,107 @@ function AbonarDialog({ saldo, onConfirm, disabled }: { saldo: number; onConfirm
             className="w-full h-12"
           >
             Confirmar abono
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+type EditarPayload = { id: string; cantidad: number; precio_unitario: number; created_at: string };
+
+function EditarDeudaDialog({
+  deuda,
+  onSave,
+  pending,
+}: {
+  deuda: { id: string; cantidad: number; precio_unitario: number; created_at: string; producto_nombre: string };
+  onSave: (p: EditarPayload) => void;
+  pending: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const [cantidad, setCantidad] = useState(String(deuda.cantidad));
+  const [fecha, setFecha] = useState<Date>(new Date(deuda.created_at));
+
+  const cantNum = Number(cantidad);
+  const monto = (cantNum || 0) * deuda.precio_unitario;
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(o) => {
+        setOpen(o);
+        if (o) {
+          setCantidad(String(deuda.cantidad));
+          setFecha(new Date(deuda.created_at));
+        }
+      }}
+    >
+      <DialogTrigger asChild>
+        <Button variant="ghost" size="icon" className="h-8 w-8">
+          <Pencil className="h-4 w-4" />
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Editar {deuda.producto_nombre}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div>
+            <Label>Cantidad</Label>
+            <Input
+              type="number"
+              min={1}
+              inputMode="numeric"
+              value={cantidad}
+              onChange={(e) => setCantidad(e.target.value)}
+              className="h-12 text-lg"
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Precio unitario: {formatCurrency(deuda.precio_unitario)} · Nuevo monto: {formatCurrency(monto)}
+            </p>
+          </div>
+          <div>
+            <Label>Fecha del registro</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className={cn("w-full justify-start text-left font-normal h-12")}>
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {format(fecha, "PPP p")}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={fecha}
+                  onSelect={(d) => {
+                    if (!d) return;
+                    const nueva = new Date(d);
+                    nueva.setHours(fecha.getHours(), fecha.getMinutes(), 0, 0);
+                    setFecha(nueva);
+                  }}
+                  initialFocus
+                  className={cn("p-3 pointer-events-auto")}
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button
+            disabled={pending || !cantNum || cantNum <= 0}
+            onClick={() => {
+              onSave({
+                id: deuda.id,
+                cantidad: cantNum,
+                precio_unitario: deuda.precio_unitario,
+                created_at: fecha.toISOString(),
+              });
+              setOpen(false);
+            }}
+            className="w-full h-12"
+          >
+            Guardar cambios
           </Button>
         </DialogFooter>
       </DialogContent>
