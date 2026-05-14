@@ -391,9 +391,35 @@ function CajaTab() {
             Saldo para iniciar mañana:{" "}
             <span className="font-bold text-primary">{formatCurrency(totalArqueoCaja)}</span>
           </p>
-          <Button onClick={() => finalizarDia.mutate()} disabled={finalizarDia.isPending} className="w-full h-12 text-base mt-2">
-            {finalizarDia.isPending ? "Guardando..." : "Finalizar Día"}
-          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button disabled={finalizarDia.isPending || !cajaInicial} className="w-full h-12 text-base mt-2">
+                {finalizarDia.isPending ? "Guardando..." : "Finalizar Día"}
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Confirmar cierre del día</AlertDialogTitle>
+                <AlertDialogDescription asChild>
+                  <div className="space-y-3 pt-2">
+                    <p>Se guardará el resumen del día en el historial.</p>
+                    <div className="rounded-lg border bg-muted/40 p-4 text-center">
+                      <p className="text-xs text-muted-foreground uppercase tracking-wide">Saldo para iniciar mañana</p>
+                      <p className="text-3xl font-extrabold text-primary mt-1">{formatCurrency(totalArqueoCaja)}</p>
+                    </div>
+                    <div className="text-xs text-muted-foreground flex justify-between">
+                      <span>Venta real del día:</span>
+                      <span className={cn("font-semibold", ventaRealDelDia >= 0 ? "text-success" : "text-destructive")}>{formatCurrency(ventaRealDelDia)}</span>
+                    </div>
+                  </div>
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={() => finalizarDia.mutate()}>Sí, finalizar día</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </CardContent>
       </Card>
     </div>
