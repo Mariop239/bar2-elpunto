@@ -27,6 +27,26 @@ function todayDate() {
 }
 
 function Dashboard() {
+  const qc = useQueryClient();
+
+  // Sincronización en vivo entre admins
+  useEffect(() => {
+    const channel = supabase
+      .channel("dashboard-sync")
+      .on("postgres_changes", { event: "*", schema: "public", table: "historial_cajas" }, () => {
+        qc.invalidateQueries({ queryKey: ["arqueo-hoy"] });
+        qc.invalidateQueries({ queryKey: ["caja-inicial-hoy"] });
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "transacciones" }, () => {
+        qc.invalidateQueries({ queryKey: ["dashboard-hoy"] });
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "deudas" }, () => {
+        qc.invalidateQueries({ queryKey: ["ultimas-deudas"] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [qc]);
+
   // Arqueo del día (si existe)
   const arqueo = useQuery({
     queryKey: ["arqueo-hoy"],
@@ -39,6 +59,7 @@ function Dashboard() {
       if (error) throw error;
       return data;
     },
+    refetchOnWindowFocus: true,
   });
 
   // Movimientos del día (gastos y fallback de venta real)
