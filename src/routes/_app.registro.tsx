@@ -74,23 +74,27 @@ function CajaTab() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const tipos: { v: TipoMov; label: string; cls: string }[] = [
+  const tipos: { v: TipoMov; label: string; cls: string; icon?: any }[] = [
     { v: "ingreso", label: "Ingreso", cls: "data-[on=true]:bg-success data-[on=true]:text-success-foreground" },
     { v: "costo", label: "Costo", cls: "data-[on=true]:bg-warning data-[on=true]:text-warning-foreground" },
     { v: "gasto", label: "Gasto", cls: "data-[on=true]:bg-destructive data-[on=true]:text-destructive-foreground" },
+    { v: "fondo_caja", label: "Fondo Caja", cls: "data-[on=true]:bg-indigo-600 data-[on=true]:text-white", icon: Briefcase },
   ];
+
+  // Fondo de caja siempre es efectivo
+  const metodoEfectivo: Metodo = tipo === "fondo_caja" ? "efectivo" : metodo;
 
   return (
     <div className="grid md:grid-cols-2 gap-4">
       <Card className="p-4 space-y-4">
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           {tipos.map((t) => (
             <button
               key={t.v}
               data-on={tipo === t.v}
               onClick={() => setTipo(t.v)}
-              className={cn("h-14 rounded-lg border font-semibold", t.cls)}
-            >{t.label}</button>
+              className={cn("h-14 rounded-lg border font-semibold flex items-center justify-center gap-1.5 text-sm", t.cls)}
+            >{t.icon && <t.icon className="h-4 w-4" />}{t.label}</button>
           ))}
         </div>
 
@@ -98,10 +102,12 @@ function CajaTab() {
           {(["efectivo","transferencia"] as Metodo[]).map((m) => (
             <button
               key={m}
-              onClick={() => setMetodo(m)}
+              onClick={() => tipo !== "fondo_caja" && setMetodo(m)}
+              disabled={tipo === "fondo_caja"}
               className={cn(
                 "h-12 rounded-lg border capitalize font-medium",
-                metodo === m ? "bg-primary text-primary-foreground border-primary" : "bg-card"
+                metodoEfectivo === m ? "bg-primary text-primary-foreground border-primary" : "bg-card",
+                tipo === "fondo_caja" && m !== "efectivo" && "opacity-40"
               )}
             >{m}</button>
           ))}
