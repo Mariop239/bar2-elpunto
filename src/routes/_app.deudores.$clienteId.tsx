@@ -62,6 +62,25 @@ function DetalleDeudor() {
     },
   });
 
+  const abonos = useQuery({
+    queryKey: ["abonos", clienteId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("abonos")
+        .select("id,monto,metodo_pago,created_at,empleado_id")
+        .eq("cliente_id", clienteId)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      const ids = Array.from(new Set((data ?? []).map((a) => a.empleado_id).filter(Boolean))) as string[];
+      let mapa: Record<string, string> = {};
+      if (ids.length) {
+        const { data: emps } = await supabase.from("empleados").select("id,nombre").in("id", ids);
+        mapa = Object.fromEntries((emps ?? []).map((e) => [e.id, e.nombre]));
+      }
+      return (data ?? []).map((a) => ({ ...a, empleado_nombre: a.empleado_id ? mapa[a.empleado_id] ?? "—" : "—" }));
+    },
+  });
+
   const abonar = useMutation({
     mutationFn: async ({ monto, metodo }: { monto: number; metodo: Metodo }) => {
       const { error } = await supabase.rpc("aplicar_abono", {
@@ -74,6 +93,7 @@ function DetalleDeudor() {
       confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
       qc.invalidateQueries({ queryKey: ["cliente", clienteId] });
       qc.invalidateQueries({ queryKey: ["deudas", clienteId] });
+      qc.invalidateQueries({ queryKey: ["abonos", clienteId] });
       qc.invalidateQueries({ queryKey: ["deudores"] });
       qc.invalidateQueries({ queryKey: ["dashboard-hoy"] });
       qc.invalidateQueries({ queryKey: ["arqueo-hoy"] });
@@ -233,6 +253,23 @@ function DetalleDeudor() {
           ))}
           </AnimatePresence>
           {(deudas.data?.filter((d) => d.estado === "pendiente").length ?? 0) === 0 && <p className="text-sm text-muted-foreground">Sin consumos pendientes</p>}
+        </div>
+      </Card>
+
+      <Card className="p-4">
+        <h3 className="font-semibold mb-3">Historial de abonos</h3>
+        <div className="space-y-2">
+          {(abonos.data ?? []).map((a) => (
+            <div key={a.id} className="flex items-center justify-between text-sm border-b pb-2 last:border-0">
+              <div>
+                <div className="font-medium">{formatCurrency(Number(a.monto))} <span className="text-xs text-muted-foreground capitalize font-normal">· {a.metodo_pago}</span></div>
+                <div className="text-xs text-muted-foreground">
+                  {new Date(a.created_at as string).toLocaleString("es-CO")} · {a.empleado_nombre}
+                </div>
+              </div>
+            </div>
+          ))}
+          {(abonos.data?.length ?? 0) === 0 && <p className="text-sm text-muted-foreground">Sin abonos registrados</p>}
         </div>
       </Card>
     </div>
