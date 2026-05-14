@@ -175,8 +175,9 @@ function CajaTab() {
       .reduce((s: number, a: any) => s + Number(a.monto), 0),
     [cobrosDeudasQ.data]
   );
+  // Ahora el input representa el VALOR EN $ por denominación (no la cantidad)
   const totalMonedas = useMemo(
-    () => DENOMS.reduce((s, d) => s + (Number(monedas[d.key]) || 0) * d.value, 0),
+    () => DENOMS.reduce((s, d) => s + (Number(monedas[d.key]) || 0), 0),
     [monedas]
   );
   const totalArqueoCaja = (Number(bancos) || 0) + (Number(billetes) || 0) + totalMonedas;
@@ -335,21 +336,24 @@ function CajaTab() {
           <Separator />
 
           <div>
-            <Label className="text-sm font-semibold">Monedas (cantidad por denominación)</Label>
+            <Label className="text-sm font-semibold">Monedas (valor en $ por denominación)</Label>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mt-2">
               {DENOMS.map((d) => {
-                const cant = Number(monedas[d.key]) || 0;
+                const monto = Number(monedas[d.key]) || 0;
+                const cant = d.value > 0 ? monto / d.value : 0;
                 return (
                   <div key={d.key} className="rounded-lg border p-3 bg-muted/30">
                     <div className="flex justify-between items-baseline mb-1">
                       <span className="font-bold text-sm">{d.label}</span>
-                      <span className="text-xs text-muted-foreground">{formatCurrency(cant * d.value)}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {cant ? `≈ ${cant % 1 === 0 ? cant : cant.toFixed(1)} u` : ""}
+                      </span>
                     </div>
                     <Input
-                      type="number" inputMode="numeric" min="0"
+                      type="number" inputMode="decimal" min="0" step="0.01"
                       value={monedas[d.key]}
                       onChange={(e) => setMonedas((m) => ({ ...m, [d.key]: e.target.value }))}
-                      placeholder="0"
+                      placeholder="0.00"
                       className="h-11 text-base text-center"
                     />
                   </div>
