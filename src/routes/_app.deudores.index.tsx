@@ -30,7 +30,7 @@ function DeudoresPage() {
           oldestDate = new Date(Math.min(...pendingDeudas.map((d: any) => new Date(d.created_at).getTime())));
         }
         
-        const hasAlerta = oldestDate ? (new Date().getTime() - oldestDate.getTime()) > 7 * 24 * 60 * 60 * 1000 : false;
+        const hasAlerta = oldestDate ? (new Date().getTime() - oldestDate.getTime()) > 31 * 24 * 60 * 60 * 1000 : false;
         
         return {
           id: c.id,
