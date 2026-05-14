@@ -76,6 +76,21 @@ function HistorialPage() {
     },
   });
 
+  // Arqueos del rango — fuente de verdad de la Venta Real
+  const arqueos = useQuery({
+    queryKey: ["arqueos-rango", desde, hasta],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("historial_cajas")
+        .select("fecha, venta_real, total_egresos, total_arqueo")
+        .gte("fecha", desde)
+        .lte("fecha", hasta)
+        .order("fecha", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
   const allIds = trans.data?.map((t: any) => t.id) ?? [];
   const allSelected = allIds.length > 0 && selectedIds.length === allIds.length;
 
