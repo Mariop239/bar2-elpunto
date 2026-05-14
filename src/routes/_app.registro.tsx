@@ -198,7 +198,8 @@ function CajaTab() {
     () => DENOMS.reduce((s, d) => s + (Number(monedas[d.key]) || 0), 0),
     [monedas]
   );
-  const totalArqueoCaja = (Number(bancos) || 0) + (Number(billetes) || 0) + totalMonedas;
+  const totalBancos = (Number(bancoPichincha) || 0) + (Number(bancoGuayaquil) || 0);
+  const totalArqueoCaja = totalBancos + (Number(billetes) || 0) + totalMonedas;
   const dineroEsperado = (Number(cajaInicial) || 0) - totalEgresos + totalCobroDeudas;
   const ventaRealDelDia = totalArqueoCaja - dineroEsperado;
 
