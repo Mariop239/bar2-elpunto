@@ -84,6 +84,7 @@ function CajaTab() {
   const guardarCajaInicial = (v: string) => {
     setCajaInicial(v);
     if (typeof window !== "undefined") localStorage.setItem(`caja_inicial_${fecha}`, v);
+    qc.invalidateQueries({ queryKey: ["caja-inicial-hoy"] });
   };
 
   const [egDesc, setEgDesc] = useState("");
