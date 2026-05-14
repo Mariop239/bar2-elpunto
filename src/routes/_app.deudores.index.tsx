@@ -55,6 +55,7 @@ function DeudoresPage() {
   const totalDeuda = (data ?? []).reduce((s, c) => s + Number(c.saldo_total), 0);
 
   return (
+    <PageTransition>
     <div className="p-4 md:p-6 max-w-3xl mx-auto space-y-4">
       <div className="flex items-baseline justify-between">
         <h2 className="text-2xl font-bold">Cuentas por cobrar</h2>
@@ -65,28 +66,35 @@ function DeudoresPage() {
 
       {isLoading && <p className="text-sm text-muted-foreground">Cargando…</p>}
       <div className="space-y-2">
-        {filtered.map((c) => {
+        {filtered.map((c, idx) => {
           const saldo = Number(c.saldo_total);
           return (
-            <Link key={c.id} to="/deudores/$clienteId" params={{ clienteId: c.id }}>
-              <Card className={`p-4 flex items-center justify-between hover:bg-accent/20 transition ${saldo > 0 ? "" : "opacity-60"} ${c.hasAlerta ? 'bg-red-50 border-red-300 dark:bg-red-950/20 dark:border-red-900/50' : ''}`}>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <div className="font-semibold">{c.nombre}</div>
-                    {c.hasAlerta && <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-500" />}
-                  </div>
-                  {c.hasAlerta && (
-                    <div className="text-xs text-red-600 dark:text-red-500 font-medium mt-0.5">
-                      Deuda antigua (+31 días)
+            <motion.div
+              key={c.id}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.25, delay: Math.min(idx * 0.04, 0.4), ease: "easeOut" }}
+            >
+              <Link to="/deudores/$clienteId" params={{ clienteId: c.id }}>
+                <Card className={`p-4 rounded-xl shadow-sm flex items-center justify-between hover:bg-accent/20 transition ${saldo > 0 ? "" : "opacity-60"} ${c.hasAlerta ? 'bg-red-50 border-red-300 dark:bg-red-950/20 dark:border-red-900/50' : ''}`}>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <div className="font-semibold">{c.nombre}</div>
+                      {c.hasAlerta && <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-500" />}
                     </div>
-                  )}
-                  <div className={`text-sm ${saldo > 0 ? (c.hasAlerta ? "text-red-700 dark:text-red-400 font-semibold" : "text-destructive font-semibold") : "text-muted-foreground"} ${c.hasAlerta ? 'mt-0.5' : ''}`}>
-                    {formatCurrency(saldo)}
+                    {c.hasAlerta && (
+                      <div className="text-xs text-red-600 dark:text-red-500 font-medium mt-0.5">
+                        Deuda antigua (+31 días)
+                      </div>
+                    )}
+                    <div className={`text-sm ${saldo > 0 ? (c.hasAlerta ? "text-red-700 dark:text-red-400 font-semibold" : "text-destructive font-semibold") : "text-muted-foreground"} ${c.hasAlerta ? 'mt-0.5' : ''}`}>
+                      {formatCurrency(saldo)}
+                    </div>
                   </div>
-                </div>
-                <ChevronRight className="h-5 w-5 text-muted-foreground" />
-              </Card>
-            </Link>
+                  <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                </Card>
+              </Link>
+            </motion.div>
           );
         })}
         {filtered.length === 0 && !isLoading && (
@@ -94,5 +102,6 @@ function DeudoresPage() {
         )}
       </div>
     </div>
+    </PageTransition>
   );
 }
