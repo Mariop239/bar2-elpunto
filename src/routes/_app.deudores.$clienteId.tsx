@@ -71,6 +71,7 @@ function DetalleDeudor() {
     },
     onSuccess: () => {
       toast.success("Pago registrado");
+      confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
       qc.invalidateQueries({ queryKey: ["cliente", clienteId] });
       qc.invalidateQueries({ queryKey: ["deudas", clienteId] });
       qc.invalidateQueries({ queryKey: ["deudores"] });
