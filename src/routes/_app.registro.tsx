@@ -175,8 +175,9 @@ function CajaTab() {
       .reduce((s: number, a: any) => s + Number(a.monto), 0),
     [cobrosDeudasQ.data]
   );
+  // Ahora el input representa el VALOR EN $ por denominación (no la cantidad)
   const totalMonedas = useMemo(
-    () => DENOMS.reduce((s, d) => s + (Number(monedas[d.key]) || 0) * d.value, 0),
+    () => DENOMS.reduce((s, d) => s + (Number(monedas[d.key]) || 0), 0),
     [monedas]
   );
   const totalArqueoCaja = (Number(bancos) || 0) + (Number(billetes) || 0) + totalMonedas;
