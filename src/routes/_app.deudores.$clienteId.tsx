@@ -67,11 +67,17 @@ function DetalleDeudor() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("abonos")
-        .select("id,monto,metodo_pago,created_at,empleado_id,empleados(nombre)")
+        .select("id,monto,metodo_pago,created_at,empleado_id")
         .eq("cliente_id", clienteId)
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data ?? [];
+      const ids = Array.from(new Set((data ?? []).map((a) => a.empleado_id).filter(Boolean))) as string[];
+      let mapa: Record<string, string> = {};
+      if (ids.length) {
+        const { data: emps } = await supabase.from("empleados").select("id,nombre").in("id", ids);
+        mapa = Object.fromEntries((emps ?? []).map((e) => [e.id, e.nombre]));
+      }
+      return (data ?? []).map((a) => ({ ...a, empleado_nombre: a.empleado_id ? mapa[a.empleado_id] ?? "—" : "—" }));
     },
   });
 
