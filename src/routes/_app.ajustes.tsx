@@ -27,6 +27,7 @@ function AjustesLayout() {
     { to: "/ajustes/categorias", label: "Categorías" },
     { to: "/ajustes/empleados", label: "Empleados" },
     { to: "/ajustes/historial", label: "Historial" },
+    { to: "/ajustes/arqueo", label: "Arqueo" },
   ] as const;
 
   return (
