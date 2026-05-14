@@ -239,8 +239,9 @@ function DetalleDeudor() {
 function PagarTodoDialog({ saldo, onConfirm, disabled }: { saldo: number; onConfirm: (m: Metodo) => void; disabled: boolean }) {
   const [open, setOpen] = useState(false);
   const [metodo, setMetodo] = useState<Metodo>("efectivo");
+  const [done, setDone] = useState(false);
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setDone(false); }}>
       <DialogTrigger asChild>
         <Button className="h-14 text-base bg-success hover:bg-success/90 text-success-foreground" disabled={disabled}>Pagar todo</Button>
       </DialogTrigger>
@@ -248,13 +249,23 @@ function PagarTodoDialog({ saldo, onConfirm, disabled }: { saldo: number; onConf
         <DialogHeader><DialogTitle>Pagar {formatCurrency(saldo)}</DialogTitle></DialogHeader>
         <div className="grid grid-cols-2 gap-2">
           {(["efectivo","transferencia"] as Metodo[]).map((m) => (
-            <button key={m} onClick={() => setMetodo(m)} className={cn("h-12 rounded-lg border capitalize font-medium", metodo === m ? "bg-primary text-primary-foreground border-primary" : "")}>
+            <button key={m} onClick={() => setMetodo(m)} disabled={done} className={cn("h-12 rounded-lg border capitalize font-medium", metodo === m ? "bg-primary text-primary-foreground border-primary" : "")}>
               {m}
             </button>
           ))}
         </div>
         <DialogFooter>
-          <Button onClick={() => { onConfirm(metodo); setOpen(false); }} className="w-full h-12">Confirmar pago</Button>
+          <Button
+            disabled={done}
+            onClick={() => {
+              onConfirm(metodo);
+              setDone(true);
+              setTimeout(() => { setOpen(false); setDone(false); }, 1500);
+            }}
+            className={cn("w-full h-12 transition-colors", done && "bg-success hover:bg-success text-success-foreground")}
+          >
+            {done ? (<><Check className="h-5 w-5" /> ¡Cobrado!</>) : "Confirmar pago"}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -265,10 +276,11 @@ function AbonarDialog({ saldo, onConfirm, disabled }: { saldo: number; onConfirm
   const [open, setOpen] = useState(false);
   const [monto, setMonto] = useState("");
   const [metodo, setMetodo] = useState<Metodo>("efectivo");
+  const [done, setDone] = useState(false);
   const valor = Number(monto);
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setDone(false); }}>
       <DialogTrigger asChild>
         <Button variant="outline" className="h-14 text-base" disabled={disabled}>Abonar</Button>
       </DialogTrigger>
@@ -277,11 +289,11 @@ function AbonarDialog({ saldo, onConfirm, disabled }: { saldo: number; onConfirm
         <div className="space-y-3">
           <div>
             <Label>Monto</Label>
-            <Input type="number" step="0.01" inputMode="decimal" value={monto} onChange={(e) => setMonto(e.target.value)} className="h-12 text-lg" />
+            <Input type="number" step="0.01" inputMode="decimal" value={monto} onChange={(e) => setMonto(e.target.value)} disabled={done} className="h-12 text-lg" />
           </div>
           <div className="grid grid-cols-2 gap-2">
             {(["efectivo","transferencia"] as Metodo[]).map((m) => (
-              <button key={m} onClick={() => setMetodo(m)} className={cn("h-12 rounded-lg border capitalize font-medium", metodo === m ? "bg-primary text-primary-foreground border-primary" : "")}>
+              <button key={m} onClick={() => setMetodo(m)} disabled={done} className={cn("h-12 rounded-lg border capitalize font-medium", metodo === m ? "bg-primary text-primary-foreground border-primary" : "")}>
                 {m}
               </button>
             ))}
@@ -289,11 +301,15 @@ function AbonarDialog({ saldo, onConfirm, disabled }: { saldo: number; onConfirm
         </div>
         <DialogFooter>
           <Button
-            disabled={!valor || valor <= 0 || valor > saldo}
-            onClick={() => { onConfirm(valor, metodo); setOpen(false); setMonto(""); }}
-            className="w-full h-12"
+            disabled={done || !valor || valor <= 0 || valor > saldo}
+            onClick={() => {
+              onConfirm(valor, metodo);
+              setDone(true);
+              setTimeout(() => { setOpen(false); setMonto(""); setDone(false); }, 1500);
+            }}
+            className={cn("w-full h-12 transition-colors", done && "bg-success hover:bg-success text-success-foreground")}
           >
-            Confirmar abono
+            {done ? (<><Check className="h-5 w-5" /> ¡Cobrado!</>) : "Confirmar abono"}
           </Button>
         </DialogFooter>
       </DialogContent>
