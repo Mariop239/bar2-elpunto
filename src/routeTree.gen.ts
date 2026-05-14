@@ -23,7 +23,6 @@ import { Route as AppAjustesHistorialRouteImport } from './routes/_app.ajustes.h
 import { Route as AppAjustesEmpleadosRouteImport } from './routes/_app.ajustes.empleados'
 import { Route as AppAjustesCategoriasRouteImport } from './routes/_app.ajustes.categorias'
 import { Route as AppAjustesCatalogoRouteImport } from './routes/_app.ajustes.catalogo'
-import { Route as AppAjustesArqueoRouteImport } from './routes/_app.ajustes.arqueo'
 
 const PinRoute = PinRouteImport.update({
   id: '/pin',
@@ -94,11 +93,6 @@ const AppAjustesCatalogoRoute = AppAjustesCatalogoRouteImport.update({
   path: '/catalogo',
   getParentRoute: () => AppAjustesRoute,
 } as any)
-const AppAjustesArqueoRoute = AppAjustesArqueoRouteImport.update({
-  id: '/arqueo',
-  path: '/arqueo',
-  getParentRoute: () => AppAjustesRoute,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -107,7 +101,6 @@ export interface FileRoutesByFullPath {
   '/ajustes': typeof AppAjustesRouteWithChildren
   '/inicio': typeof AppInicioRoute
   '/registro': typeof AppRegistroRoute
-  '/ajustes/arqueo': typeof AppAjustesArqueoRoute
   '/ajustes/catalogo': typeof AppAjustesCatalogoRoute
   '/ajustes/categorias': typeof AppAjustesCategoriasRoute
   '/ajustes/empleados': typeof AppAjustesEmpleadosRoute
@@ -122,7 +115,6 @@ export interface FileRoutesByTo {
   '/pin': typeof PinRoute
   '/inicio': typeof AppInicioRoute
   '/registro': typeof AppRegistroRoute
-  '/ajustes/arqueo': typeof AppAjustesArqueoRoute
   '/ajustes/catalogo': typeof AppAjustesCatalogoRoute
   '/ajustes/categorias': typeof AppAjustesCategoriasRoute
   '/ajustes/empleados': typeof AppAjustesEmpleadosRoute
@@ -140,7 +132,6 @@ export interface FileRoutesById {
   '/_app/ajustes': typeof AppAjustesRouteWithChildren
   '/_app/inicio': typeof AppInicioRoute
   '/_app/registro': typeof AppRegistroRoute
-  '/_app/ajustes/arqueo': typeof AppAjustesArqueoRoute
   '/_app/ajustes/catalogo': typeof AppAjustesCatalogoRoute
   '/_app/ajustes/categorias': typeof AppAjustesCategoriasRoute
   '/_app/ajustes/empleados': typeof AppAjustesEmpleadosRoute
@@ -158,7 +149,6 @@ export interface FileRouteTypes {
     | '/ajustes'
     | '/inicio'
     | '/registro'
-    | '/ajustes/arqueo'
     | '/ajustes/catalogo'
     | '/ajustes/categorias'
     | '/ajustes/empleados'
@@ -173,7 +163,6 @@ export interface FileRouteTypes {
     | '/pin'
     | '/inicio'
     | '/registro'
-    | '/ajustes/arqueo'
     | '/ajustes/catalogo'
     | '/ajustes/categorias'
     | '/ajustes/empleados'
@@ -190,7 +179,6 @@ export interface FileRouteTypes {
     | '/_app/ajustes'
     | '/_app/inicio'
     | '/_app/registro'
-    | '/_app/ajustes/arqueo'
     | '/_app/ajustes/catalogo'
     | '/_app/ajustes/categorias'
     | '/_app/ajustes/empleados'
@@ -307,18 +295,10 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAjustesCatalogoRouteImport
       parentRoute: typeof AppAjustesRoute
     }
-    '/_app/ajustes/arqueo': {
-      id: '/_app/ajustes/arqueo'
-      path: '/arqueo'
-      fullPath: '/ajustes/arqueo'
-      preLoaderRoute: typeof AppAjustesArqueoRouteImport
-      parentRoute: typeof AppAjustesRoute
-    }
   }
 }
 
 interface AppAjustesRouteChildren {
-  AppAjustesArqueoRoute: typeof AppAjustesArqueoRoute
   AppAjustesCatalogoRoute: typeof AppAjustesCatalogoRoute
   AppAjustesCategoriasRoute: typeof AppAjustesCategoriasRoute
   AppAjustesEmpleadosRoute: typeof AppAjustesEmpleadosRoute
@@ -327,7 +307,6 @@ interface AppAjustesRouteChildren {
 }
 
 const AppAjustesRouteChildren: AppAjustesRouteChildren = {
-  AppAjustesArqueoRoute: AppAjustesArqueoRoute,
   AppAjustesCatalogoRoute: AppAjustesCatalogoRoute,
   AppAjustesCategoriasRoute: AppAjustesCategoriasRoute,
   AppAjustesEmpleadosRoute: AppAjustesEmpleadosRoute,
