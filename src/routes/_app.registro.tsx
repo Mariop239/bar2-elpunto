@@ -46,105 +46,327 @@ function RegistroPage() {
 
 /* ---------- CAJA ---------- */
 
+const DENOMS = [
+  { key: "m100", label: "$1.00", value: 1.0 },
+  { key: "m050", label: "$0.50", value: 0.5 },
+  { key: "m025", label: "$0.25", value: 0.25 },
+  { key: "m010", label: "$0.10", value: 0.1 },
+  { key: "m005", label: "$0.05", value: 0.05 },
+] as const;
+
+type DenomKey = typeof DENOMS[number]["key"];
+
+function todayISO() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
 function CajaTab() {
   const empleado = useEmpleado((s) => s.empleado)!;
   const qc = useQueryClient();
-  const [tipo, setTipo] = useState<TipoMov>("ingreso");
-  const [metodo, setMetodo] = useState<Metodo>("efectivo");
-  const [monto, setMonto] = useState("");
-  const [descripcion, setDescripcion] = useState("");
+  const fecha = todayISO();
 
-  const press = (d: string) => setMonto((m) => {
-    if (d === "." && m.includes(".")) return m;
-    return m === "0" && d !== "." ? d : m + d;
+  const [cajaInicial, setCajaInicial] = useState<string>(() => {
+    if (typeof window === "undefined") return "";
+    return localStorage.getItem(`caja_inicial_${fecha}`) ?? "";
   });
-  const back = () => setMonto((m) => m.slice(0, -1));
-  const clear = () => setMonto("");
+  const guardarCajaInicial = (v: string) => {
+    setCajaInicial(v);
+    if (typeof window !== "undefined") localStorage.setItem(`caja_inicial_${fecha}`, v);
+  };
 
-  const saveMut = useMutation({
+  const [egDesc, setEgDesc] = useState("");
+  const [egMonto, setEgMonto] = useState("");
+
+  const egresosQ = useQuery({
+    queryKey: ["egresos-hoy", fecha],
+    queryFn: async () => {
+      const start = `${fecha}T00:00:00`;
+      const end = `${fecha}T23:59:59`;
+      const { data, error } = await supabase
+        .from("transacciones")
+        .select("id,monto,descripcion,created_at")
+        .eq("tipo", "gasto")
+        .gte("created_at", start)
+        .lte("created_at", end)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const addEgreso = useMutation({
     mutationFn: async () => {
-      const m = Number(monto);
-      if (!m || m <= 0) throw new Error("Ingresa un monto válido");
-      const metodoFinal = tipo === "fondo_caja" ? "efectivo" : metodo;
+      const m = Number(egMonto);
+      if (!m || m <= 0) throw new Error("Monto inválido");
       const { error } = await supabase.from("transacciones").insert({
-        tipo, metodo_pago: metodoFinal, monto: m, descripcion: descripcion || null, empleado_id: empleado.id, origen: "manual",
+        tipo: "gasto",
+        metodo_pago: "efectivo",
+        monto: m,
+        descripcion: egDesc || null,
+        empleado_id: empleado.id,
+        origen: "manual",
       });
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("Movimiento guardado");
-      setMonto(""); setDescripcion("");
+      toast.success("Egreso registrado");
+      setEgDesc(""); setEgMonto("");
+      qc.invalidateQueries({ queryKey: ["egresos-hoy", fecha] });
       qc.invalidateQueries({ queryKey: ["dashboard-hoy"] });
       qc.invalidateQueries({ queryKey: ["historial"] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const tipos: { v: TipoMov; label: string; cls: string; icon?: any }[] = [
-    { v: "ingreso", label: "Ingreso", cls: "data-[on=true]:bg-success data-[on=true]:text-success-foreground" },
-    { v: "costo", label: "Costo", cls: "data-[on=true]:bg-warning data-[on=true]:text-warning-foreground" },
-    { v: "gasto", label: "Gasto", cls: "data-[on=true]:bg-destructive data-[on=true]:text-destructive-foreground" },
-    { v: "fondo_caja", label: "Fondo Caja", cls: "data-[on=true]:bg-indigo-600 data-[on=true]:text-white" },
-  ];
+  const delEgreso = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("transacciones").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Egreso eliminado");
+      qc.invalidateQueries({ queryKey: ["egresos-hoy", fecha] });
+      qc.invalidateQueries({ queryKey: ["dashboard-hoy"] });
+    },
+  });
 
-  // Fondo de caja siempre es efectivo
-  const metodoEfectivo: Metodo = tipo === "fondo_caja" ? "efectivo" : metodo;
+  const [bancos, setBancos] = useState("");
+  const [billetes, setBilletes] = useState("");
+  const [monedas, setMonedas] = useState<Record<DenomKey, string>>({
+    m100: "", m050: "", m025: "", m010: "", m005: "",
+  });
+
+  const totalEgresos = useMemo(
+    () => (egresosQ.data ?? []).reduce((s, e) => s + Number(e.monto), 0),
+    [egresosQ.data]
+  );
+  const totalMonedas = useMemo(
+    () => DENOMS.reduce((s, d) => s + (Number(monedas[d.key]) || 0) * d.value, 0),
+    [monedas]
+  );
+  const totalArqueo = (Number(bancos) || 0) + (Number(billetes) || 0) + totalMonedas;
+  const dineroBaseEsperado = (Number(cajaInicial) || 0) - totalEgresos;
+  const ventaReal = totalArqueo - dineroBaseEsperado;
+
+  const finalizarDia = useMutation({
+    mutationFn: async () => {
+      if (!cajaInicial) throw new Error("Ingresa la Caja Inicial");
+      const monedasDetalle = Object.fromEntries(
+        DENOMS.map((d) => [d.key, Number(monedas[d.key]) || 0])
+      );
+      const { error } = await supabase.from("historial_cajas").upsert({
+        fecha,
+        caja_inicial: Number(cajaInicial) || 0,
+        total_egresos: totalEgresos,
+        bancos: Number(bancos) || 0,
+        billetes: Number(billetes) || 0,
+        monedas: monedasDetalle,
+        total_arqueo: totalArqueo,
+        venta_real: ventaReal,
+        empleado_id: empleado.id,
+      }, { onConflict: "fecha" });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Día finalizado y guardado en historial");
+      qc.invalidateQueries({ queryKey: ["historial"] });
+      qc.invalidateQueries({ queryKey: ["dashboard-hoy"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
 
   return (
-    <div className="grid md:grid-cols-2 gap-4">
-      <Card className="p-4 space-y-4">
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-          {tipos.map((t) => (
-            <button
-              key={t.v}
-              data-on={tipo === t.v}
-              onClick={() => setTipo(t.v)}
-              className={cn("h-14 rounded-lg border font-semibold flex items-center justify-center text-sm", t.cls)}
-            >{t.label}</button>
-          ))}
-        </div>
-
-        <div className="grid grid-cols-2 gap-2">
-          {(["efectivo","transferencia"] as Metodo[]).map((m) => (
-            <button
-              key={m}
-              onClick={() => tipo !== "fondo_caja" && setMetodo(m)}
-              disabled={tipo === "fondo_caja"}
-              className={cn(
-                "h-12 rounded-lg border capitalize font-medium",
-                metodoEfectivo === m ? "bg-primary text-primary-foreground border-primary" : "bg-card",
-                tipo === "fondo_caja" && m !== "efectivo" && "opacity-40"
-              )}
-            >{m}</button>
-          ))}
-        </div>
-
-        <div>
-          <Label>Descripción (opcional)</Label>
-          <Input value={descripcion} onChange={(e) => setDescripcion(e.target.value)} className="h-12" placeholder="Ej: pago luz" />
-        </div>
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Wallet className="h-5 w-5 text-primary" /> A. Apertura del Día
+          </CardTitle>
+          <CardDescription>Dinero base con el que se abre la caja hoy</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Label htmlFor="caja-inicial" className="text-sm">Caja Inicial</Label>
+          <div className="relative mt-1.5 max-w-sm">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-lg font-semibold text-muted-foreground">$</span>
+            <Input
+              id="caja-inicial"
+              inputMode="decimal"
+              type="number"
+              step="0.01"
+              value={cajaInicial}
+              onChange={(e) => guardarCajaInicial(e.target.value)}
+              placeholder="0.00"
+              className="h-14 pl-8 text-2xl font-bold"
+            />
+          </div>
+        </CardContent>
       </Card>
 
-      <Card className="p-4 space-y-3">
-        <div className="rounded-lg bg-muted p-4 text-right">
-          <div className="text-xs text-muted-foreground uppercase">Monto</div>
-          <div className="text-3xl font-bold">{monto ? formatCurrency(Number(monto)) : formatCurrency(0)}</div>
-        </div>
-        <div className="grid grid-cols-3 gap-2">
-          {["1","2","3","4","5","6","7","8","9"].map((d) => (
-            <Button key={d} variant="outline" className="h-14 text-xl" onClick={() => press(d)}>{d}</Button>
-          ))}
-          <Button variant="outline" className="h-14 text-xl" onClick={() => press(".")}>.</Button>
-          <Button variant="outline" className="h-14 text-xl" onClick={() => press("0")}>0</Button>
-          <Button variant="outline" className="h-14" onClick={back}><Delete /></Button>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="ghost" onClick={clear} className="flex-1">Limpiar</Button>
-          <Button onClick={() => saveMut.mutate()} disabled={saveMut.isPending} className="flex-1 h-12 text-base">
-            {saveMut.isPending ? "Guardando..." : "Guardar"}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <TrendingDown className="h-5 w-5 text-destructive" /> B. Egresos del Día
+          </CardTitle>
+          <CardDescription>Gastos pagados desde la caja</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-[1fr_180px_auto] gap-2 items-end">
+            <div>
+              <Label className="text-xs">Descripción</Label>
+              <Input
+                value={egDesc}
+                onChange={(e) => setEgDesc(e.target.value)}
+                placeholder="Ej: pago luz"
+                className="h-12 mt-1"
+              />
+            </div>
+            <div>
+              <Label className="text-xs">Monto</Label>
+              <Input
+                type="number"
+                inputMode="decimal"
+                step="0.01"
+                value={egMonto}
+                onChange={(e) => setEgMonto(e.target.value)}
+                placeholder="0.00"
+                className="h-12 mt-1 text-lg"
+              />
+            </div>
+            <Button onClick={() => addEgreso.mutate()} disabled={addEgreso.isPending} className="h-12">
+              <Plus className="h-4 w-4 mr-1" /> Agregar
+            </Button>
+          </div>
+
+          <div className="rounded-lg border overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Descripción</TableHead>
+                  <TableHead className="text-right">Monto</TableHead>
+                  <TableHead className="w-12" />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {(egresosQ.data ?? []).length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={3} className="text-center text-muted-foreground py-6">
+                      Sin egresos registrados
+                    </TableCell>
+                  </TableRow>
+                )}
+                {(egresosQ.data ?? []).map((e) => (
+                  <TableRow key={e.id}>
+                    <TableCell>{e.descripcion || <span className="text-muted-foreground italic">Sin descripción</span>}</TableCell>
+                    <TableCell className="text-right font-semibold text-destructive">
+                      {formatCurrency(Number(e.monto))}
+                    </TableCell>
+                    <TableCell>
+                      <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => delEgreso.mutate(e.id)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          <div className="flex justify-between items-center pt-2 border-t">
+            <span className="text-sm font-medium text-muted-foreground">Total Egresos</span>
+            <span className="text-xl font-bold text-destructive">{formatCurrency(totalEgresos)}</span>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Calculator className="h-5 w-5 text-indigo-600" /> C. Arqueo / Cierre de Caja
+          </CardTitle>
+          <CardDescription>Dinero físico que hay al cierre del día</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <Label className="text-xs">Bancos / Transferencias</Label>
+              <Input type="number" inputMode="decimal" step="0.01" value={bancos} onChange={(e) => setBancos(e.target.value)} placeholder="0.00" className="h-12 mt-1 text-lg" />
+            </div>
+            <div>
+              <Label className="text-xs">Billetes (efectivo)</Label>
+              <Input type="number" inputMode="decimal" step="0.01" value={billetes} onChange={(e) => setBilletes(e.target.value)} placeholder="0.00" className="h-12 mt-1 text-lg" />
+            </div>
+          </div>
+
+          <Separator />
+
+          <div>
+            <Label className="text-sm font-semibold">Monedas (cantidad por denominación)</Label>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mt-2">
+              {DENOMS.map((d) => {
+                const cant = Number(monedas[d.key]) || 0;
+                return (
+                  <div key={d.key} className="rounded-lg border p-3 bg-muted/30">
+                    <div className="flex justify-between items-baseline mb-1">
+                      <span className="font-bold text-sm">{d.label}</span>
+                      <span className="text-xs text-muted-foreground">{formatCurrency(cant * d.value)}</span>
+                    </div>
+                    <Input
+                      type="number" inputMode="numeric" min="0"
+                      value={monedas[d.key]}
+                      onChange={(e) => setMonedas((m) => ({ ...m, [d.key]: e.target.value }))}
+                      placeholder="0"
+                      className="h-11 text-base text-center"
+                    />
+                  </div>
+                );
+              })}
+            </div>
+            <div className="flex justify-between mt-3 text-sm">
+              <span className="text-muted-foreground">Subtotal monedas</span>
+              <span className="font-semibold">{formatCurrency(totalMonedas)}</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="border-2 border-primary/30 bg-primary/5">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <CheckCircle2 className="h-5 w-5 text-primary" /> Resumen del Día
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <Row label="Caja Inicial" value={formatCurrency(Number(cajaInicial) || 0)} />
+          <Row label="(-) Total Egresos" value={formatCurrency(totalEgresos)} className="text-destructive" />
+          <Row label="= Dinero Base Esperado" value={formatCurrency(dineroBaseEsperado)} bold />
+          <Separator className="my-2" />
+          <Row label="Total Arqueo (físico)" value={formatCurrency(totalArqueo)} bold />
+          <Separator className="my-2" />
+          <div className="flex justify-between items-center bg-success/10 rounded-lg p-3">
+            <span className="text-base font-bold">VENTA REAL DEL DÍA</span>
+            <span className={cn("text-2xl font-extrabold", ventaReal >= 0 ? "text-success" : "text-destructive")}>
+              {formatCurrency(ventaReal)}
+            </span>
+          </div>
+          <p className="text-center text-sm pt-2">
+            Saldo para iniciar mañana:{" "}
+            <span className="font-bold text-primary">{formatCurrency(totalArqueo)}</span>
+          </p>
+          <Button onClick={() => finalizarDia.mutate()} disabled={finalizarDia.isPending} className="w-full h-12 text-base mt-2">
+            {finalizarDia.isPending ? "Guardando..." : "Finalizar Día"}
           </Button>
-        </div>
+        </CardContent>
       </Card>
+    </div>
+  );
+}
+
+function Row({ label, value, bold, className }: { label: string; value: string; bold?: boolean; className?: string }) {
+  return (
+    <div className={cn("flex justify-between items-center py-1", className)}>
+      <span className={cn("text-sm", bold && "font-semibold")}>{label}</span>
+      <span className={cn("text-base", bold ? "font-bold" : "font-medium")}>{value}</span>
     </div>
   );
 }
