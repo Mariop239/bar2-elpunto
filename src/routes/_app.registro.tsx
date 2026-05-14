@@ -158,8 +158,26 @@ function CajaTab() {
     },
   });
 
-  const [bancos, setBancos] = useState("");
+  const [bancoPichincha, setBancoPichincha] = useState("");
+  const [bancoGuayaquil, setBancoGuayaquil] = useState("");
   const [billetes, setBilletes] = useState("");
+
+  // Sugerir Caja Inicial de hoy = Total Arqueo de ayer (último cierre guardado)
+  const ultimoCierreQ = useQuery({
+    queryKey: ["ultimo-cierre", fecha],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("historial_cajas")
+        .select("fecha,total_arqueo")
+        .lt("fecha", fecha)
+        .order("fecha", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+  const sugerenciaCajaInicial = ultimoCierreQ.data ? Number(ultimoCierreQ.data.total_arqueo) : 0;
   const [monedas, setMonedas] = useState<Record<DenomKey, string>>({
     m100: "", m050: "", m025: "", m010: "", m005: "",
   });
@@ -180,21 +198,24 @@ function CajaTab() {
     () => DENOMS.reduce((s, d) => s + (Number(monedas[d.key]) || 0), 0),
     [monedas]
   );
-  const totalArqueoCaja = (Number(bancos) || 0) + (Number(billetes) || 0) + totalMonedas;
+  const totalBancos = (Number(bancoPichincha) || 0) + (Number(bancoGuayaquil) || 0);
+  const totalArqueoCaja = totalBancos + (Number(billetes) || 0) + totalMonedas;
   const dineroEsperado = (Number(cajaInicial) || 0) - totalEgresos + totalCobroDeudas;
   const ventaRealDelDia = totalArqueoCaja - dineroEsperado;
 
   const finalizarDia = useMutation({
     mutationFn: async () => {
       if (!cajaInicial) throw new Error("Ingresa la Caja Inicial");
-      const monedasDetalle = Object.fromEntries(
-        DENOMS.map((d) => [d.key, Number(monedas[d.key]) || 0])
-      );
+      const monedasDetalle = {
+        ...Object.fromEntries(DENOMS.map((d) => [d.key, Number(monedas[d.key]) || 0])),
+        banco_pichincha: Number(bancoPichincha) || 0,
+        banco_guayaquil: Number(bancoGuayaquil) || 0,
+      };
       const { error } = await supabase.from("historial_cajas").upsert({
         fecha,
         caja_inicial: Number(cajaInicial) || 0,
         total_egresos: totalEgresos,
-        bancos: Number(bancos) || 0,
+        bancos: totalBancos,
         billetes: Number(billetes) || 0,
         monedas: monedasDetalle,
         total_arqueo: totalArqueoCaja,
@@ -202,11 +223,25 @@ function CajaTab() {
         empleado_id: empleado.id,
       }, { onConflict: "fecha" });
       if (error) throw error;
+
+      // Registrar movimiento de "Cierre de Caja" en el historial de transacciones
+      const desc = `Cierre de Caja — Venta Real: ${formatCurrency(ventaRealDelDia)}, Gastos: ${formatCurrency(totalEgresos)}, Cobros deudas: ${formatCurrency(totalCobroDeudas)}, Pichincha: ${formatCurrency(Number(bancoPichincha) || 0)}, Guayaquil: ${formatCurrency(Number(bancoGuayaquil) || 0)}`;
+      await supabase.from("transacciones").insert({
+        tipo: "fondo_caja",
+        metodo_pago: "efectivo",
+        monto: totalArqueoCaja,
+        descripcion: desc,
+        empleado_id: empleado.id,
+        origen: "cierre_caja",
+      });
     },
     onSuccess: () => {
       toast.success("Día finalizado y guardado en historial");
       qc.invalidateQueries({ queryKey: ["historial"] });
       qc.invalidateQueries({ queryKey: ["dashboard-hoy"] });
+      qc.invalidateQueries({ queryKey: ["ultimo-cierre"] });
+      // Limpiar caja inicial local para que mañana tome la sugerencia
+      if (typeof window !== "undefined") localStorage.removeItem(`caja_inicial_${fecha}`);
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -235,6 +270,15 @@ function CajaTab() {
               className="h-14 pl-8 text-2xl font-bold"
             />
           </div>
+          {sugerenciaCajaInicial > 0 && !cajaInicial && (
+            <button
+              type="button"
+              onClick={() => guardarCajaInicial(String(sugerenciaCajaInicial))}
+              className="mt-2 text-xs text-primary underline underline-offset-2 hover:no-underline"
+            >
+              Usar saldo del cierre anterior: {formatCurrency(sugerenciaCajaInicial)}
+            </button>
+          )}
         </CardContent>
       </Card>
 
@@ -322,15 +366,35 @@ function CajaTab() {
           <CardDescription>Dinero físico que hay al cierre del día</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div>
-              <Label className="text-xs">Bancos / Transferencias</Label>
-              <Input type="number" inputMode="decimal" step="0.01" value={bancos} onChange={(e) => setBancos(e.target.value)} placeholder="0.00" className="h-12 mt-1 text-lg" />
+          <div>
+            <Label className="text-sm font-semibold">Bancos / Transferencias</Label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
+              <div className="rounded-lg border-2 border-yellow-400 bg-yellow-50 dark:bg-yellow-950/30 p-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-yellow-400 text-yellow-950 font-extrabold text-xs">BP</span>
+                  <Label className="text-sm font-bold">Banco Pichincha</Label>
+                </div>
+                <Input type="number" inputMode="decimal" step="0.01" value={bancoPichincha} onChange={(e) => setBancoPichincha(e.target.value)} placeholder="0.00" className="h-12 text-lg bg-background" />
+              </div>
+              <div className="rounded-lg border-2 border-blue-500 bg-blue-50 dark:bg-blue-950/30 p-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-blue-600 text-white font-extrabold text-xs">BG</span>
+                  <Label className="text-sm font-bold">Banco Guayaquil</Label>
+                </div>
+                <Input type="number" inputMode="decimal" step="0.01" value={bancoGuayaquil} onChange={(e) => setBancoGuayaquil(e.target.value)} placeholder="0.00" className="h-12 text-lg bg-background" />
+              </div>
             </div>
-            <div>
-              <Label className="text-xs">Billetes (efectivo)</Label>
-              <Input type="number" inputMode="decimal" step="0.01" value={billetes} onChange={(e) => setBilletes(e.target.value)} placeholder="0.00" className="h-12 mt-1 text-lg" />
+            <div className="flex justify-between mt-2 text-sm">
+              <span className="text-muted-foreground">Subtotal Bancos</span>
+              <span className="font-semibold">{formatCurrency(totalBancos)}</span>
             </div>
+          </div>
+
+          <Separator />
+
+          <div>
+            <Label className="text-xs">Billetes (efectivo)</Label>
+            <Input type="number" inputMode="decimal" step="0.01" value={billetes} onChange={(e) => setBilletes(e.target.value)} placeholder="0.00" className="h-12 mt-1 text-lg max-w-sm" />
           </div>
 
           <Separator />
