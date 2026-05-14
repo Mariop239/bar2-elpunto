@@ -207,20 +207,8 @@ function FiadosTab() {
       return rest;
     });
 
-  const crearCliente = useMutation({
-    mutationFn: async (nombre: string) => {
-      const { data, error } = await supabase.from("clientes").insert({ nombre }).select("id,nombre").single();
-      if (error) throw error;
-      return data as Cliente;
-    },
-    onSuccess: (c) => {
-      qc.invalidateQueries({ queryKey: ["clientes"] });
-      setClienteId(c.id);
-      setNuevoCliente("");
-      toast.success(`Cliente ${c.nombre} creado`);
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
+
+
 
   const confirmar = useMutation({
     mutationFn: async () => {
