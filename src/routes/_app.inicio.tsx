@@ -162,5 +162,6 @@ function Dashboard() {
         </div>
       </div>
     </div>
+    </PageTransition>
   );
 }
