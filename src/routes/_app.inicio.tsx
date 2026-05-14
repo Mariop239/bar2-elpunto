@@ -70,8 +70,9 @@ function Dashboard() {
     },
   });
 
-  const t = data ?? { ingresoEfectivo: 0, ingresoTransferencia: 0, costo: 0, gasto: 0 };
+  const t = data ?? { ingresoEfectivo: 0, ingresoTransferencia: 0, costo: 0, gasto: 0, fondoCajaHoy: 0, fondoInicial: 0 };
   const balance = t.ingresoEfectivo + t.ingresoTransferencia - t.costo - t.gasto;
+  const efectivoEnCaja = t.fondoInicial + t.ingresoEfectivo - t.costo - t.gasto - t.fondoCajaHoy;
 
   const cards = [
     { label: "Ingresos efectivo", value: t.ingresoEfectivo, icon: Banknote, color: "text-success", bg: "bg-success/10" },
@@ -99,12 +100,24 @@ function Dashboard() {
         ))}
       </div>
 
-      <Card className="p-5">
-        <p className="text-sm text-muted-foreground">Balance del día</p>
-        <p className={`text-3xl font-bold ${balance >= 0 ? "text-success" : "text-destructive"}`}>
-          {isLoading ? "—" : formatCurrency(balance)}
-        </p>
-      </Card>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <Card className="p-4 bg-indigo-50 dark:bg-indigo-950/30 border-indigo-200 dark:border-indigo-900/50">
+          <Briefcase className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+          <p className="mt-2 text-xs text-muted-foreground">Fondo Inicial de Caja</p>
+          <p className="text-lg font-bold text-indigo-700 dark:text-indigo-300">{isLoading ? "—" : formatCurrency(t.fondoInicial)}</p>
+        </Card>
+        <Card className="p-4 bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900/50">
+          <Coins className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+          <p className="mt-2 text-xs text-muted-foreground">Efectivo Actual en Caja</p>
+          <p className="text-lg font-bold text-amber-700 dark:text-amber-300">{isLoading ? "—" : formatCurrency(efectivoEnCaja)}</p>
+        </Card>
+        <Card className="p-4">
+          <p className="text-sm text-muted-foreground">Balance del día</p>
+          <p className={`text-2xl font-bold ${balance >= 0 ? "text-success" : "text-destructive"}`}>
+            {isLoading ? "—" : formatCurrency(balance)}
+          </p>
+        </Card>
+      </div>
 
       <div className="grid grid-cols-2 gap-3">
         <Button asChild size="lg" className="h-16 text-base">
