@@ -157,7 +157,6 @@ function FiadosTab() {
   const empleado = useEmpleado((s) => s.empleado)!;
   const qc = useQueryClient();
   const [clienteId, setClienteId] = useState<string>("");
-  const [nuevoCliente, setNuevoCliente] = useState("");
   const [cart, setCart] = useState<Record<string, CartItem>>({});
   const [fechaDeuda, setFechaDeuda] = useState<Date>(new Date());
   const [categoriaActiva, setCategoriaActiva] = useState<string>("Todos");
@@ -208,20 +207,8 @@ function FiadosTab() {
       return rest;
     });
 
-  const crearCliente = useMutation({
-    mutationFn: async (nombre: string) => {
-      const { data, error } = await supabase.from("clientes").insert({ nombre }).select("id,nombre").single();
-      if (error) throw error;
-      return data as Cliente;
-    },
-    onSuccess: (c) => {
-      qc.invalidateQueries({ queryKey: ["clientes"] });
-      setClienteId(c.id);
-      setNuevoCliente("");
-      toast.success(`Cliente ${c.nombre} creado`);
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
+
+
 
   const confirmar = useMutation({
     mutationFn: async () => {
@@ -255,22 +242,16 @@ function FiadosTab() {
     <div className="grid md:grid-cols-3 gap-4">
       <div className="md:col-span-2 space-y-3">
         <Card className="p-3 flex flex-col gap-3">
-          <div className="flex flex-col sm:flex-row gap-2">
-            <select
-              value={clienteId}
-              onChange={(e) => setClienteId(e.target.value)}
-              className="flex-1 h-12 rounded-md border border-input bg-background px-3 text-base"
-            >
-              <option value="">Selecciona cliente…</option>
-              {(clientes.data ?? []).map((c) => (
-                <option key={c.id} value={c.id}>{c.nombre}</option>
-              ))}
-            </select>
-            <div className="flex gap-2">
-              <Input value={nuevoCliente} onChange={(e) => setNuevoCliente(e.target.value)} placeholder="Nuevo cliente" className="h-12" />
-              <Button onClick={() => nuevoCliente.trim() && crearCliente.mutate(nuevoCliente.trim())} disabled={crearCliente.isPending} className="h-12">+</Button>
-            </div>
-          </div>
+          <select
+            value={clienteId}
+            onChange={(e) => setClienteId(e.target.value)}
+            className="w-full h-12 rounded-md border border-input bg-background px-3 text-base"
+          >
+            <option value="">Selecciona cliente…</option>
+            {(clientes.data ?? []).map((c) => (
+              <option key={c.id} value={c.id}>{c.nombre}</option>
+            ))}
+          </select>
           <div className="flex flex-col gap-1.5">
             <Label className="text-xs text-muted-foreground ml-1">Fecha de la Deuda</Label>
             <Popover>
