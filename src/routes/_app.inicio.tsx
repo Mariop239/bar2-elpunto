@@ -45,13 +45,20 @@ function Dashboard() {
     queryKey: ["dashboard-hoy"],
     queryFn: async () => {
       const since = startOfDayISO();
-      const { data: hoy, error } = await supabase
-        .from("transacciones")
-        .select("tipo,metodo_pago,monto")
-        .gte("created_at", since);
+      const [{ data: hoy, error }, { data: abonosHoy, error: errAb }] = await Promise.all([
+        supabase
+          .from("transacciones")
+          .select("tipo,metodo_pago,monto")
+          .gte("created_at", since),
+        supabase
+          .from("abonos")
+          .select("monto,metodo_pago")
+          .gte("created_at", since),
+      ]);
       if (error) throw error;
+      if (errAb) throw errAb;
 
-      const totals = { ingresoEfectivo: 0, ingresoTransferencia: 0, costo: 0, gasto: 0 };
+      const totals = { ingresoEfectivo: 0, ingresoTransferencia: 0, costo: 0, gasto: 0, cobroDeudas: 0 };
       for (const t of hoy ?? []) {
         const m = Number(t.monto);
         if (t.tipo === "ingreso") {
@@ -60,6 +67,7 @@ function Dashboard() {
         } else if (t.tipo === "costo") totals.costo += m;
         else if (t.tipo === "gasto") totals.gasto += m;
       }
+      for (const a of abonosHoy ?? []) totals.cobroDeudas += Number(a.monto);
       return totals;
     },
   });
