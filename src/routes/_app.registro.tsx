@@ -206,14 +206,16 @@ function CajaTab() {
   const finalizarDia = useMutation({
     mutationFn: async () => {
       if (!cajaInicial) throw new Error("Ingresa la Caja Inicial");
-      const monedasDetalle = Object.fromEntries(
-        DENOMS.map((d) => [d.key, Number(monedas[d.key]) || 0])
-      );
+      const monedasDetalle = {
+        ...Object.fromEntries(DENOMS.map((d) => [d.key, Number(monedas[d.key]) || 0])),
+        banco_pichincha: Number(bancoPichincha) || 0,
+        banco_guayaquil: Number(bancoGuayaquil) || 0,
+      };
       const { error } = await supabase.from("historial_cajas").upsert({
         fecha,
         caja_inicial: Number(cajaInicial) || 0,
         total_egresos: totalEgresos,
-        bancos: Number(bancos) || 0,
+        bancos: totalBancos,
         billetes: Number(billetes) || 0,
         monedas: monedasDetalle,
         total_arqueo: totalArqueoCaja,
@@ -221,11 +223,25 @@ function CajaTab() {
         empleado_id: empleado.id,
       }, { onConflict: "fecha" });
       if (error) throw error;
+
+      // Registrar movimiento de "Cierre de Caja" en el historial de transacciones
+      const desc = `Cierre de Caja — Venta Real: ${formatCurrency(ventaRealDelDia)}, Gastos: ${formatCurrency(totalEgresos)}, Cobros deudas: ${formatCurrency(totalCobroDeudas)}, Pichincha: ${formatCurrency(Number(bancoPichincha) || 0)}, Guayaquil: ${formatCurrency(Number(bancoGuayaquil) || 0)}`;
+      await supabase.from("transacciones").insert({
+        tipo: "fondo_caja",
+        metodo_pago: "efectivo",
+        monto: totalArqueoCaja,
+        descripcion: desc,
+        empleado_id: empleado.id,
+        origen: "cierre_caja",
+      });
     },
     onSuccess: () => {
       toast.success("Día finalizado y guardado en historial");
       qc.invalidateQueries({ queryKey: ["historial"] });
       qc.invalidateQueries({ queryKey: ["dashboard-hoy"] });
+      qc.invalidateQueries({ queryKey: ["ultimo-cierre"] });
+      // Limpiar caja inicial local para que mañana tome la sugerencia
+      if (typeof window !== "undefined") localStorage.removeItem(`caja_inicial_${fecha}`);
     },
     onError: (e: Error) => toast.error(e.message),
   });
