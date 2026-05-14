@@ -357,15 +357,35 @@ function CajaTab() {
           <CardDescription>Dinero físico que hay al cierre del día</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div>
-              <Label className="text-xs">Bancos / Transferencias</Label>
-              <Input type="number" inputMode="decimal" step="0.01" value={bancos} onChange={(e) => setBancos(e.target.value)} placeholder="0.00" className="h-12 mt-1 text-lg" />
+          <div>
+            <Label className="text-sm font-semibold">Bancos / Transferencias</Label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
+              <div className="rounded-lg border-2 border-yellow-400 bg-yellow-50 dark:bg-yellow-950/30 p-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-yellow-400 text-yellow-950 font-extrabold text-xs">BP</span>
+                  <Label className="text-sm font-bold">Banco Pichincha</Label>
+                </div>
+                <Input type="number" inputMode="decimal" step="0.01" value={bancoPichincha} onChange={(e) => setBancoPichincha(e.target.value)} placeholder="0.00" className="h-12 text-lg bg-background" />
+              </div>
+              <div className="rounded-lg border-2 border-blue-500 bg-blue-50 dark:bg-blue-950/30 p-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-blue-600 text-white font-extrabold text-xs">BG</span>
+                  <Label className="text-sm font-bold">Banco Guayaquil</Label>
+                </div>
+                <Input type="number" inputMode="decimal" step="0.01" value={bancoGuayaquil} onChange={(e) => setBancoGuayaquil(e.target.value)} placeholder="0.00" className="h-12 text-lg bg-background" />
+              </div>
             </div>
-            <div>
-              <Label className="text-xs">Billetes (efectivo)</Label>
-              <Input type="number" inputMode="decimal" step="0.01" value={billetes} onChange={(e) => setBilletes(e.target.value)} placeholder="0.00" className="h-12 mt-1 text-lg" />
+            <div className="flex justify-between mt-2 text-sm">
+              <span className="text-muted-foreground">Subtotal Bancos</span>
+              <span className="font-semibold">{formatCurrency(totalBancos)}</span>
             </div>
+          </div>
+
+          <Separator />
+
+          <div>
+            <Label className="text-xs">Billetes (efectivo)</Label>
+            <Input type="number" inputMode="decimal" step="0.01" value={billetes} onChange={(e) => setBilletes(e.target.value)} placeholder="0.00" className="h-12 mt-1 text-lg max-w-sm" />
           </div>
 
           <Separator />
