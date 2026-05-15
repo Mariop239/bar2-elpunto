@@ -13,6 +13,7 @@ import { Plus, Minus, Trash2, CalendarIcon, Search, X, Wallet, TrendingDown, Cal
 import { PageTransition } from "@/components/page-transition";
 import { toast } from "sonner";
 import { useEmpleado } from "@/lib/empleado-store";
+import { useLocalStorage } from "@/hooks/use-local-storage";
 import { formatCurrency, cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -184,9 +185,25 @@ function CajaTab() {
     },
   });
 
-  const [bancoPichincha, setBancoPichincha] = useState("");
-  const [bancoGuayaquil, setBancoGuayaquil] = useState("");
-  const [billetes, setBilletes] = useState("");
+  const ARQ_KEYS = {
+    pichincha: `arqueo_banco_pichincha_${fecha}`,
+    guayaquil: `arqueo_banco_guayaquil_${fecha}`,
+    billetes: `arqueo_billetes_${fecha}`,
+    monedas: `arqueo_monedas_${fecha}`,
+  };
+  const [bancoPichincha, setBancoPichincha] = useLocalStorage<string>(ARQ_KEYS.pichincha, "");
+  const [bancoGuayaquil, setBancoGuayaquil] = useLocalStorage<string>(ARQ_KEYS.guayaquil, "");
+  const [billetes, setBilletes] = useLocalStorage<string>(ARQ_KEYS.billetes, "");
+  const [monedas, setMonedas] = useLocalStorage<Record<DenomKey, string>>(ARQ_KEYS.monedas, {
+    m100: "", m050: "", m025: "", m010: "", m005: "",
+  });
+
+  const limpiarArqueo = () => {
+    setBancoPichincha("");
+    setBancoGuayaquil("");
+    setBilletes("");
+    setMonedas({ m100: "", m050: "", m025: "", m010: "", m005: "" });
+  };
 
   // Sugerir Caja Inicial de hoy = Total Arqueo de ayer (último cierre guardado)
   const ultimoCierreQ = useQuery({
@@ -204,9 +221,6 @@ function CajaTab() {
     },
   });
   const sugerenciaCajaInicial = ultimoCierreQ.data ? Number(ultimoCierreQ.data.total_arqueo) : 0;
-  const [monedas, setMonedas] = useState<Record<DenomKey, string>>({
-    m100: "", m050: "", m025: "", m010: "", m005: "",
-  });
 
   const totalEgresos = useMemo(
     () => (egresosQ.data ?? []).reduce((s, e) => s + Number(e.monto), 0),
@@ -266,8 +280,12 @@ function CajaTab() {
       qc.invalidateQueries({ queryKey: ["historial"] });
       qc.invalidateQueries({ queryKey: ["dashboard-hoy"] });
       qc.invalidateQueries({ queryKey: ["ultimo-cierre"] });
-      // Limpiar caja inicial local para que mañana tome la sugerencia
-      if (typeof window !== "undefined") localStorage.removeItem(`caja_inicial_${fecha}`);
+      // Limpiar caja inicial y arqueo locales
+      if (typeof window !== "undefined") {
+        localStorage.removeItem(`caja_inicial_${fecha}`);
+        Object.values(ARQ_KEYS).forEach((k) => localStorage.removeItem(k));
+      }
+      limpiarArqueo();
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -454,6 +472,18 @@ function CajaTab() {
               <span className="text-muted-foreground">Subtotal monedas</span>
               <span className="font-semibold">{formatCurrency(totalMonedas)}</span>
             </div>
+          </div>
+
+          <div className="flex justify-end pt-1">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={limpiarArqueo}
+              className="text-xs text-muted-foreground hover:text-destructive"
+            >
+              <Trash2 className="h-3.5 w-3.5 mr-1" /> Limpiar valores
+            </Button>
           </div>
         </CardContent>
       </Card>

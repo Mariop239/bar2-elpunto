@@ -15,15 +15,16 @@ export const Route = createFileRoute("/_app/inicio")({
   component: Dashboard,
 });
 
-function startOfDayISO() {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  return d.toISOString();
-}
-
 function todayDate() {
   const d = new Date();
-  return d.toISOString().slice(0, 10);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function localDayRange() {
+  const fecha = todayDate();
+  const ini = new Date(fecha + "T00:00:00").toISOString();
+  const fin = new Date(fecha + "T23:59:59.999").toISOString();
+  return { ini, fin };
 }
 
 function Dashboard() {
@@ -63,24 +64,31 @@ function Dashboard() {
   });
 
   // Movimientos del día (gastos y fallback de venta real)
+  // Misma lógica que /ajustes/historial: rango por día local, filtrado por tipo='gasto'
   const { data, isLoading } = useQuery({
-    queryKey: ["dashboard-hoy"],
+    queryKey: ["dashboard-hoy", todayDate()],
     queryFn: async () => {
-      const since = startOfDayISO();
+      const { ini, fin } = localDayRange();
       const { data: hoy, error } = await supabase
         .from("transacciones")
         .select("tipo,metodo_pago,monto")
-        .gte("created_at", since);
+        .gte("created_at", ini)
+        .lte("created_at", fin);
       if (error) throw error;
 
-      const totals = { ingresoEfectivo: 0, ingresoTransferencia: 0, gasto: 0 };
-      for (const t of hoy ?? []) {
-        const m = Number(t.monto);
-        if (t.tipo === "ingreso") {
-          if (t.metodo_pago === "efectivo") totals.ingresoEfectivo += m;
-          else totals.ingresoTransferencia += m;
-        } else if (t.tipo === "gasto") totals.gasto += m;
-      }
+      const totals = (hoy ?? []).reduce(
+        (acc, t) => {
+          const m = Number(t.monto);
+          if (t.tipo === "ingreso") {
+            if (t.metodo_pago === "efectivo") acc.ingresoEfectivo += m;
+            else acc.ingresoTransferencia += m;
+          } else if (t.tipo === "gasto") {
+            acc.gasto += m;
+          }
+          return acc;
+        },
+        { ingresoEfectivo: 0, ingresoTransferencia: 0, gasto: 0 }
+      );
       return totals;
     },
     refetchOnWindowFocus: true,
