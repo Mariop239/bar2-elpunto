@@ -15,15 +15,16 @@ export const Route = createFileRoute("/_app/inicio")({
   component: Dashboard,
 });
 
-function startOfDayISO() {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  return d.toISOString();
-}
-
 function todayDate() {
   const d = new Date();
-  return d.toISOString().slice(0, 10);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function localDayRange() {
+  const fecha = todayDate();
+  const ini = new Date(fecha + "T00:00:00").toISOString();
+  const fin = new Date(fecha + "T23:59:59.999").toISOString();
+  return { ini, fin };
 }
 
 function Dashboard() {
