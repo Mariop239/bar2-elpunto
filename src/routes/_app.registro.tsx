@@ -13,6 +13,7 @@ import { Plus, Minus, Trash2, CalendarIcon, Search, X, Wallet, TrendingDown, Cal
 import { PageTransition } from "@/components/page-transition";
 import { toast } from "sonner";
 import { useEmpleado } from "@/lib/empleado-store";
+import { useLocalStorage } from "@/hooks/use-local-storage";
 import { formatCurrency, cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
