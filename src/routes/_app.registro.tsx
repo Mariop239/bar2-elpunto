@@ -473,6 +473,18 @@ function CajaTab() {
               <span className="font-semibold">{formatCurrency(totalMonedas)}</span>
             </div>
           </div>
+
+          <div className="flex justify-end pt-1">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={limpiarArqueo}
+              className="text-xs text-muted-foreground hover:text-destructive"
+            >
+              <Trash2 className="h-3.5 w-3.5 mr-1" /> Limpiar valores
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
