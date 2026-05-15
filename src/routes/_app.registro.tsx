@@ -280,8 +280,12 @@ function CajaTab() {
       qc.invalidateQueries({ queryKey: ["historial"] });
       qc.invalidateQueries({ queryKey: ["dashboard-hoy"] });
       qc.invalidateQueries({ queryKey: ["ultimo-cierre"] });
-      // Limpiar caja inicial local para que mañana tome la sugerencia
-      if (typeof window !== "undefined") localStorage.removeItem(`caja_inicial_${fecha}`);
+      // Limpiar caja inicial y arqueo locales
+      if (typeof window !== "undefined") {
+        localStorage.removeItem(`caja_inicial_${fecha}`);
+        Object.values(ARQ_KEYS).forEach((k) => localStorage.removeItem(k));
+      }
+      limpiarArqueo();
     },
     onError: (e: Error) => toast.error(e.message),
   });
