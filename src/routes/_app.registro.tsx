@@ -185,9 +185,25 @@ function CajaTab() {
     },
   });
 
-  const [bancoPichincha, setBancoPichincha] = useState("");
-  const [bancoGuayaquil, setBancoGuayaquil] = useState("");
-  const [billetes, setBilletes] = useState("");
+  const ARQ_KEYS = {
+    pichincha: `arqueo_banco_pichincha_${fecha}`,
+    guayaquil: `arqueo_banco_guayaquil_${fecha}`,
+    billetes: `arqueo_billetes_${fecha}`,
+    monedas: `arqueo_monedas_${fecha}`,
+  };
+  const [bancoPichincha, setBancoPichincha] = useLocalStorage<string>(ARQ_KEYS.pichincha, "");
+  const [bancoGuayaquil, setBancoGuayaquil] = useLocalStorage<string>(ARQ_KEYS.guayaquil, "");
+  const [billetes, setBilletes] = useLocalStorage<string>(ARQ_KEYS.billetes, "");
+  const [monedas, setMonedas] = useLocalStorage<Record<DenomKey, string>>(ARQ_KEYS.monedas, {
+    m100: "", m050: "", m025: "", m010: "", m005: "",
+  });
+
+  const limpiarArqueo = () => {
+    setBancoPichincha("");
+    setBancoGuayaquil("");
+    setBilletes("");
+    setMonedas({ m100: "", m050: "", m025: "", m010: "", m005: "" });
+  };
 
   // Sugerir Caja Inicial de hoy = Total Arqueo de ayer (último cierre guardado)
   const ultimoCierreQ = useQuery({
@@ -205,9 +221,6 @@ function CajaTab() {
     },
   });
   const sugerenciaCajaInicial = ultimoCierreQ.data ? Number(ultimoCierreQ.data.total_arqueo) : 0;
-  const [monedas, setMonedas] = useState<Record<DenomKey, string>>({
-    m100: "", m050: "", m025: "", m010: "", m005: "",
-  });
 
   const totalEgresos = useMemo(
     () => (egresosQ.data ?? []).reduce((s, e) => s + Number(e.monto), 0),
