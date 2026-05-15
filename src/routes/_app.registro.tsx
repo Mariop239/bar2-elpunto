@@ -117,8 +117,10 @@ function CajaTab() {
   const egresosQ = useQuery({
     queryKey: ["egresos-hoy", fecha],
     queryFn: async () => {
-      const start = `${fecha}T00:00:00`;
-      const end = `${fecha}T23:59:59`;
+      // Rango por día local (zona horaria del navegador) para evitar
+      // que un gasto creado al final del día aparezca en el día siguiente UTC.
+      const start = new Date(`${fecha}T00:00:00`).toISOString();
+      const end = new Date(`${fecha}T23:59:59.999`).toISOString();
       const { data, error } = await supabase
         .from("transacciones")
         .select("id,monto,descripcion,created_at")
@@ -136,8 +138,8 @@ function CajaTab() {
   const cobrosDeudasQ = useQuery({
     queryKey: ["cobros-deudas-hoy", fecha],
     queryFn: async () => {
-      const start = `${fecha}T00:00:00`;
-      const end = `${fecha}T23:59:59`;
+      const start = new Date(`${fecha}T00:00:00`).toISOString();
+      const end = new Date(`${fecha}T23:59:59.999`).toISOString();
       const { data, error } = await supabase
         .from("abonos")
         .select("monto,metodo_pago,created_at")
