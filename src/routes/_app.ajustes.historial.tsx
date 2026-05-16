@@ -331,6 +331,41 @@ function HistorialPage() {
                       valueClass="font-bold text-success text-base"
                     />
                   </div>
+
+                  <Accordion type="single" collapsible className="rounded-lg border px-3">
+                    <AccordionItem value="gastos" className="border-b-0">
+                      <AccordionTrigger className="text-sm">
+                        <span className="flex-1 text-left">Ver lista de gastos del día</span>
+                        {egresosDiaQ.data && (
+                          <span className="mr-2 text-xs text-muted-foreground">
+                            {egresosDiaQ.data.length} {egresosDiaQ.data.length === 1 ? "gasto" : "gastos"}
+                          </span>
+                        )}
+                      </AccordionTrigger>
+                      <AccordionContent>
+                        {egresosDiaQ.isLoading ? (
+                          <p className="text-sm text-muted-foreground py-2">Cargando...</p>
+                        ) : (egresosDiaQ.data?.length ?? 0) === 0 ? (
+                          <p className="text-sm text-muted-foreground py-2 italic">
+                            No se registraron gastos este día
+                          </p>
+                        ) : (
+                          <ul className="divide-y">
+                            {egresosDiaQ.data!.map((g) => (
+                              <li key={g.id} className="flex items-center justify-between gap-3 py-2.5">
+                                <span className="text-sm text-foreground truncate">
+                                  {g.descripcion?.trim() || "Sin descripción"}
+                                </span>
+                                <span className="text-sm font-medium text-destructive whitespace-nowrap">
+                                  {formatCurrency(Number(g.monto))}
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
                 </section>
 
                 {/* Grupo B: Efectivo físico */}
