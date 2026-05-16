@@ -131,6 +131,24 @@ function HistorialPage() {
     setEditMode(false);
   }, [selected?.id]);
 
+  const egresosDiaQ = useQuery({
+    queryKey: ["egresos-dia-detalle", selected?.fecha],
+    enabled: !!selected?.fecha,
+    queryFn: async () => {
+      const start = new Date(`${selected!.fecha}T00:00:00`).toISOString();
+      const end = new Date(`${selected!.fecha}T23:59:59.999`).toISOString();
+      const { data, error } = await supabase
+        .from("transacciones")
+        .select("id, descripcion, monto, created_at, tipo")
+        .eq("tipo", "gasto")
+        .gte("created_at", start)
+        .lte("created_at", end)
+        .order("created_at", { ascending: true });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
   const totales = cierres.reduce(
     (acc, c) => {
       acc.ventaReal += Number(c.venta_real);
