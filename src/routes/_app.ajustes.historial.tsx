@@ -19,6 +19,12 @@ import {
   SheetDescription,
 } from "@/components/ui/sheet";
 import {
+  Accordion,
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
+} from "@/components/ui/accordion";
+import {
   Table,
   TableBody,
   TableCell,
