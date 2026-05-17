@@ -172,13 +172,28 @@ function Dashboard() {
           <p className="mt-2 text-xs text-muted-foreground">Gastos / Egresos</p>
           <p className="text-2xl font-bold text-destructive">{isLoading || arqueo.isLoading ? "—" : formatCurrency(totalEgresos)}</p>
         </Card>
-        <Card className="p-4 bg-success/10 border-success/20 rounded-xl shadow-sm">
-          <Banknote className="h-6 w-6 text-success" />
-          <p className="mt-2 text-xs text-muted-foreground">Venta Real del día</p>
-          <p className="text-2xl font-bold text-success">
-            {arqueo.isLoading ? "—" : ventaReal !== null ? formatCurrency(ventaReal) : "Pendiente arqueo"}
-          </p>
-        </Card>
+        {arqueo.isLoading ? (
+          <Card className="p-4 bg-muted/40 border-dashed rounded-xl shadow-sm">
+            <Banknote className="h-6 w-6 text-muted-foreground" />
+            <p className="mt-2 text-xs text-muted-foreground">Venta Real del día</p>
+            <p className="text-2xl font-bold text-muted-foreground">—</p>
+          </Card>
+        ) : ventaReal !== null ? (
+          <Card className="p-4 bg-success/10 border-success/30 rounded-xl shadow-sm ring-1 ring-success/20">
+            <div className="flex items-center justify-between">
+              <Banknote className="h-6 w-6 text-success" />
+              <Badge className="bg-success/15 text-success hover:bg-success/15 border-success/30 text-[10px]">Cierre realizado</Badge>
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">Venta Real del día</p>
+            <p className="text-3xl font-extrabold text-success tracking-tight">{formatCurrency(ventaReal)}</p>
+          </Card>
+        ) : (
+          <Card className="p-4 bg-muted/30 border-dashed border-muted-foreground/30 rounded-xl shadow-none">
+            <Banknote className="h-6 w-6 text-muted-foreground" />
+            <p className="mt-2 text-xs text-muted-foreground">Venta Real del día</p>
+            <p className="text-sm font-medium text-muted-foreground italic">Pendiente de arqueo</p>
+          </Card>
+        )}
       </div>
 
       <div className="grid grid-cols-2 gap-3">
