@@ -1,0 +1,1 @@
+DELETE FROM public.historial_cajas WHERE id = '34219e66-67f2-472e-aded-d62dbc9dd96b';
