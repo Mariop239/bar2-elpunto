@@ -407,6 +407,7 @@ function CajaTab() {
         </CardContent>
       </Card>
 
+      {isAdmin && (<>
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
