@@ -29,6 +29,8 @@ function localDayRange() {
 }
 
 function Dashboard() {
+  const empleado = useEmpleado((s) => s.empleado);
+  if (empleado && empleado.rol !== "admin") return <Navigate to="/registro" replace />;
   const qc = useQueryClient();
 
   // Sincronización en vivo entre admins
