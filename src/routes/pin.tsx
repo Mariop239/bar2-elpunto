@@ -45,7 +45,7 @@ function PinPage() {
     if (comparePin(pin, selected.pin_hash)) {
       setEmpleado({ id: selected.id, nombre: selected.nombre, rol: selected.rol, loggedAt: Date.now() });
       toast.success(`Bienvenido, ${selected.nombre}`);
-      navigate({ to: "/inicio" });
+      navigate({ to: selected.rol === "admin" ? "/inicio" : "/registro" });
     } else {
       toast.error("PIN incorrecto");
       setPin("");
