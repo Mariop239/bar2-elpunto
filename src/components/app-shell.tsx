@@ -4,11 +4,11 @@ import { cn } from "@/lib/utils";
 import { useEmpleado } from "@/lib/empleado-store";
 import { Button } from "@/components/ui/button";
 
-const items = [
-  { to: "/", label: "Inicio", icon: Home },
-  { to: "/registro", label: "Registro", icon: ClipboardList },
-  { to: "/deudores", label: "Fiados", icon: Wallet },
-  { to: "/ajustes", label: "Ajustes", icon: Settings },
+const allItems = [
+  { to: "/", label: "Inicio", icon: Home, adminOnly: true },
+  { to: "/registro", label: "Registro", icon: ClipboardList, adminOnly: false },
+  { to: "/deudores", label: "Fiados", icon: Wallet, adminOnly: false },
+  { to: "/ajustes", label: "Ajustes", icon: Settings, adminOnly: true },
 ] as const;
 
 export function AppShell({ children }: { children: React.ReactNode }) {
