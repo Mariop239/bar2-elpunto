@@ -75,6 +75,7 @@ function todayISO() {
 
 function CajaTab() {
   const empleado = useEmpleado((s) => s.empleado)!;
+  const isAdmin = empleado.rol === "admin";
   const qc = useQueryClient();
   const fecha = todayISO();
 
