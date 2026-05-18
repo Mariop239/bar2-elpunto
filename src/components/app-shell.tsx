@@ -74,7 +74,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <main className="flex-1 pb-20 md:pb-6">{children}</main>
 
       {/* Bottom nav (mobile) */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t z-40 grid grid-cols-4">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t z-40 grid" style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}>
         {items.map(({ to, label, icon: Icon }) => {
           const active = location.pathname === to || (to !== "/" && location.pathname.startsWith(to));
           return (
