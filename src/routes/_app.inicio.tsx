@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,6 +10,7 @@ import { Banknote, ShoppingCart, Receipt, PlusCircle, Wallet, Clock, ArrowRight,
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { PageTransition } from "@/components/page-transition";
+import { useEmpleado } from "@/lib/empleado-store";
 
 export const Route = createFileRoute("/_app/inicio")({
   component: Dashboard,
@@ -28,6 +29,8 @@ function localDayRange() {
 }
 
 function Dashboard() {
+  const empleado = useEmpleado((s) => s.empleado);
+  if (empleado && empleado.rol !== "admin") return <Navigate to="/registro" replace />;
   const qc = useQueryClient();
 
   // Sincronización en vivo entre admins

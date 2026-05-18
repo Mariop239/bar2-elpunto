@@ -4,17 +4,18 @@ import { cn } from "@/lib/utils";
 import { useEmpleado } from "@/lib/empleado-store";
 import { Button } from "@/components/ui/button";
 
-const items = [
-  { to: "/", label: "Inicio", icon: Home },
-  { to: "/registro", label: "Registro", icon: ClipboardList },
-  { to: "/deudores", label: "Fiados", icon: Wallet },
-  { to: "/ajustes", label: "Ajustes", icon: Settings },
+const allItems = [
+  { to: "/", label: "Inicio", icon: Home, adminOnly: true },
+  { to: "/registro", label: "Registro", icon: ClipboardList, adminOnly: false },
+  { to: "/deudores", label: "Fiados", icon: Wallet, adminOnly: false },
+  { to: "/ajustes", label: "Ajustes", icon: Settings, adminOnly: true },
 ] as const;
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const empleado = useEmpleado((s) => s.empleado);
   const logoutEmp = useEmpleado((s) => s.logout);
   const location = useLocation();
+  const items = allItems.filter((i) => empleado?.rol === "admin" || !i.adminOnly);
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-background">
@@ -73,7 +74,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <main className="flex-1 pb-20 md:pb-6">{children}</main>
 
       {/* Bottom nav (mobile) */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t z-40 grid grid-cols-4">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t z-40 grid" style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}>
         {items.map(({ to, label, icon: Icon }) => {
           const active = location.pathname === to || (to !== "/" && location.pathname.startsWith(to));
           return (

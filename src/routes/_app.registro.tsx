@@ -75,6 +75,7 @@ function todayISO() {
 
 function CajaTab() {
   const empleado = useEmpleado((s) => s.empleado)!;
+  const isAdmin = empleado.rol === "admin";
   const qc = useQueryClient();
   const fecha = todayISO();
 
@@ -294,6 +295,7 @@ function CajaTab() {
 
   return (
     <div className="space-y-4">
+      {isAdmin && (
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -327,6 +329,7 @@ function CajaTab() {
           )}
         </CardContent>
       </Card>
+      )}
 
       <Card>
         <CardHeader>
@@ -404,6 +407,7 @@ function CajaTab() {
         </CardContent>
       </Card>
 
+      {isAdmin && (<>
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -547,6 +551,7 @@ function CajaTab() {
           </AlertDialog>
         </CardContent>
       </Card>
+      </>)}
     </div>
   );
 }

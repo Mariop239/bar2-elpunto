@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet, Link, useLocation } from "@tanstack/react-router";
+import { createFileRoute, Outlet, Link, useLocation, Navigate } from "@tanstack/react-router";
 import { useEmpleado } from "@/lib/empleado-store";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -11,15 +11,8 @@ function AjustesLayout() {
   const empleado = useEmpleado((s) => s.empleado);
   const location = useLocation();
 
-  if (empleado?.rol !== "admin") {
-    return (
-      <div className="p-6 max-w-md mx-auto">
-        <Card className="p-6 text-center">
-          <h2 className="font-bold text-lg">Solo Admin</h2>
-          <p className="text-sm text-muted-foreground mt-2">Esta sección está restringida.</p>
-        </Card>
-      </div>
-    );
+  if (empleado && empleado.rol !== "admin") {
+    return <Navigate to="/registro" replace />;
   }
 
   const tabs = [
