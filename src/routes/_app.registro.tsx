@@ -551,6 +551,7 @@ function CajaTab() {
           </AlertDialog>
         </CardContent>
       </Card>
+      </>)}
     </div>
   );
 }
