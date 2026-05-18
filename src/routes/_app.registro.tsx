@@ -295,6 +295,7 @@ function CajaTab() {
 
   return (
     <div className="space-y-4">
+      {isAdmin && (
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -328,6 +329,7 @@ function CajaTab() {
           )}
         </CardContent>
       </Card>
+      )}
 
       <Card>
         <CardHeader>
