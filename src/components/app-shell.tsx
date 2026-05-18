@@ -15,6 +15,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const empleado = useEmpleado((s) => s.empleado);
   const logoutEmp = useEmpleado((s) => s.logout);
   const location = useLocation();
+  const items = allItems.filter((i) => empleado?.rol === "admin" || !i.adminOnly);
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-background">
