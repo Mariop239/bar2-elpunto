@@ -223,7 +223,7 @@ function Dashboard() {
             <SheetDescription>Últimos 15 días — auditoría por empleado</SheetDescription>
           </SheetHeader>
           <div className="mt-4">
-            <FiadosRecientes days={15} />
+            <FiadosRecientes days={15} showFilter />
           </div>
         </SheetContent>
       </Sheet>
