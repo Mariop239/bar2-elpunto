@@ -124,6 +124,7 @@ export type Database = {
           precio_unitario: number
           producto_id: string | null
           producto_nombre: string
+          registrado_por: string | null
         }
         Insert: {
           cantidad?: number
@@ -137,6 +138,7 @@ export type Database = {
           precio_unitario: number
           producto_id?: string | null
           producto_nombre: string
+          registrado_por?: string | null
         }
         Update: {
           cantidad?: number
@@ -150,6 +152,7 @@ export type Database = {
           precio_unitario?: number
           producto_id?: string | null
           producto_nombre?: string
+          registrado_por?: string | null
         }
         Relationships: [
           {
@@ -289,6 +292,7 @@ export type Database = {
           metodo_pago: Database["public"]["Enums"]["metodo_pago"] | null
           monto: number
           origen: string
+          registrado_por: string | null
           tipo: Database["public"]["Enums"]["tipo_transaccion"]
         }
         Insert: {
@@ -300,6 +304,7 @@ export type Database = {
           metodo_pago?: Database["public"]["Enums"]["metodo_pago"] | null
           monto: number
           origen?: string
+          registrado_por?: string | null
           tipo: Database["public"]["Enums"]["tipo_transaccion"]
         }
         Update: {
@@ -311,6 +316,7 @@ export type Database = {
           metodo_pago?: Database["public"]["Enums"]["metodo_pago"] | null
           monto?: number
           origen?: string
+          registrado_por?: string | null
           tipo?: Database["public"]["Enums"]["tipo_transaccion"]
         }
         Relationships: [

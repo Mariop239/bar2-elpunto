@@ -11,6 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Minus, Trash2, CalendarIcon, Search, X, Wallet, TrendingDown, Calculator, CheckCircle2 } from "lucide-react";
 import { PageTransition } from "@/components/page-transition";
+import { FiadosRecientes } from "@/components/fiados-recientes";
 import { toast } from "sonner";
 import { useEmpleado } from "@/lib/empleado-store";
 import { useLocalStorage } from "@/hooks/use-local-storage";
@@ -162,6 +163,7 @@ function CajaTab() {
         monto: m,
         descripcion: egDesc || null,
         empleado_id: empleado.id,
+        registrado_por: empleado.nombre,
         origen: "manual",
       });
       if (error) throw error;
@@ -275,6 +277,7 @@ function CajaTab() {
         monto: totalArqueoCaja,
         descripcion: desc,
         empleado_id: empleado.id,
+        registrado_por: empleado.nombre,
         origen: "cierre_caja",
       });
     },
@@ -331,7 +334,9 @@ function CajaTab() {
       </Card>
       )}
 
+      {isAdmin ? (
       <Card>
+
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <TrendingDown className="h-5 w-5 text-destructive" /> B. Egresos del Día
@@ -406,6 +411,19 @@ function CajaTab() {
           </div>
         </CardContent>
       </Card>
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Wallet className="h-5 w-5 text-primary" /> Fiados recientes
+            </CardTitle>
+            <CardDescription>Últimos 15 días — auditoría por empleado</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <FiadosRecientes days={15} />
+          </CardContent>
+        </Card>
+      )}
 
       {isAdmin && (<>
       <Card>
@@ -641,6 +659,7 @@ function FiadosTab() {
         cantidad: i.cantidad,
         monto: i.cantidad * i.producto.precio,
         empleado_id: empleado.id,
+        registrado_por: empleado.nombre,
         created_at: fechaDeuda.toISOString(),
       }));
       const { error } = await supabase.from("deudas").insert(rows);
