@@ -643,6 +643,7 @@ function FiadosTab() {
         cantidad: i.cantidad,
         monto: i.cantidad * i.producto.precio,
         empleado_id: empleado.id,
+        registrado_por: empleado.nombre,
         created_at: fechaDeuda.toISOString(),
       }));
       const { error } = await supabase.from("deudas").insert(rows);
