@@ -162,6 +162,7 @@ function CajaTab() {
         monto: m,
         descripcion: egDesc || null,
         empleado_id: empleado.id,
+        registrado_por: empleado.nombre,
         origen: "manual",
       });
       if (error) throw error;
