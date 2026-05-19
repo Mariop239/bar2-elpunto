@@ -276,6 +276,7 @@ function CajaTab() {
         monto: totalArqueoCaja,
         descripcion: desc,
         empleado_id: empleado.id,
+        registrado_por: empleado.nombre,
         origen: "cierre_caja",
       });
     },
