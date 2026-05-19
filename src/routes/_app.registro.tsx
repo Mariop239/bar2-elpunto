@@ -411,6 +411,19 @@ function CajaTab() {
           </div>
         </CardContent>
       </Card>
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Wallet className="h-5 w-5 text-primary" /> Fiados recientes
+            </CardTitle>
+            <CardDescription>Últimos 15 días — auditoría por empleado</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <FiadosRecientes days={15} />
+          </CardContent>
+        </Card>
+      )}
 
       {isAdmin && (<>
       <Card>
