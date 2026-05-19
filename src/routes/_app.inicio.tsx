@@ -203,31 +203,31 @@ function Dashboard() {
           <h3 className="text-sm font-semibold flex items-center gap-1.5 text-muted-foreground">
             <Clock className="h-4 w-4" /> Últimos Fiados Registrados
           </h3>
-          <Button asChild variant="link" size="sm" className="h-auto p-0 text-xs">
-            <Link to="/ajustes/historial">Ver más <ArrowRight className="h-3 w-3 ml-1" /></Link>
+          <Button
+            variant="link"
+            size="sm"
+            className="h-auto p-0 text-xs"
+            onClick={() => setOpenHist(true)}
+          >
+            Ver más <ArrowRight className="h-3 w-3 ml-1" />
           </Button>
         </div>
 
-        <div className="space-y-2">
-          {ultimasDeudas.isLoading && <p className="text-xs text-muted-foreground">Cargando...</p>}
-          {!ultimasDeudas.isLoading && ultimasDeudas.data?.length === 0 && (
-            <p className="text-xs text-muted-foreground p-3 border rounded-lg bg-muted/30 text-center">No hay fiados recientes</p>
-          )}
-          {ultimasDeudas.data?.map((deuda: any) => (
-            <Card key={deuda.id} className="p-3 flex items-center justify-between border-border/50 shadow-sm">
-              <div>
-                <p className="font-medium text-sm">{formatCurrency(deuda.monto)}</p>
-                <p className="text-xs text-muted-foreground capitalize">
-                  {format(new Date(deuda.created_at), "dd MMM, HH:mm", { locale: es })}
-                </p>
-              </div>
-              <div className="text-xs font-medium px-2 py-1 bg-secondary text-secondary-foreground rounded-md">
-                {deuda.empleado?.nombre || "Sistema"}
-              </div>
-            </Card>
-          ))}
-        </div>
+        <FiadosRecientes limit={3} />
       </div>
+
+      <Sheet open={openHist} onOpenChange={setOpenHist}>
+        <SheetContent side="right" className="w-full sm:max-w-xl overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>Historial de Fiados</SheetTitle>
+            <SheetDescription>Últimos 15 días — auditoría por empleado</SheetDescription>
+          </SheetHeader>
+          <div className="mt-4">
+            <FiadosRecientes days={15} />
+          </div>
+        </SheetContent>
+      </Sheet>
+
     </div>
     </PageTransition>
   );
