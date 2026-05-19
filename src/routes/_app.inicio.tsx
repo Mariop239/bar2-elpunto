@@ -1,16 +1,16 @@
 import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { formatCurrency } from "@/lib/utils";
-import { Banknote, ShoppingCart, Receipt, PlusCircle, Wallet, Clock, ArrowRight, Coins, TrendingUp, AlertCircle } from "lucide-react";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
+import { Banknote, Receipt, PlusCircle, Wallet, Clock, ArrowRight, Coins, AlertCircle } from "lucide-react";
 import { PageTransition } from "@/components/page-transition";
 import { useEmpleado } from "@/lib/empleado-store";
+import { FiadosRecientes } from "@/components/fiados-recientes";
 
 export const Route = createFileRoute("/_app/inicio")({
   component: Dashboard,
