@@ -11,6 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Minus, Trash2, CalendarIcon, Search, X, Wallet, TrendingDown, Calculator, CheckCircle2 } from "lucide-react";
 import { PageTransition } from "@/components/page-transition";
+import { FiadosRecientes } from "@/components/fiados-recientes";
 import { toast } from "sonner";
 import { useEmpleado } from "@/lib/empleado-store";
 import { useLocalStorage } from "@/hooks/use-local-storage";
