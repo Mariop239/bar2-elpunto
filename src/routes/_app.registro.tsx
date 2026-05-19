@@ -420,7 +420,7 @@ function CajaTab() {
             <CardDescription>Últimos 15 días — auditoría por empleado</CardDescription>
           </CardHeader>
           <CardContent>
-            <FiadosRecientes days={15} />
+            <FiadosRecientes days={15} showFilter />
           </CardContent>
         </Card>
       )}
