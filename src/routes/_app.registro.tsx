@@ -174,6 +174,9 @@ function CajaTab() {
       qc.invalidateQueries({ queryKey: ["egresos-hoy", fecha] });
       qc.invalidateQueries({ queryKey: ["dashboard-hoy"] });
       qc.invalidateQueries({ queryKey: ["historial"] });
+      qc.invalidateQueries({ queryKey: ["arqueo-hoy"] });
+      qc.invalidateQueries({ queryKey: ["caja-inicial-hoy"] });
+      qc.invalidateQueries({ queryKey: ["historial_cajas"] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -187,6 +190,9 @@ function CajaTab() {
       toast.success("Egreso eliminado");
       qc.invalidateQueries({ queryKey: ["egresos-hoy", fecha] });
       qc.invalidateQueries({ queryKey: ["dashboard-hoy"] });
+      qc.invalidateQueries({ queryKey: ["arqueo-hoy"] });
+      qc.invalidateQueries({ queryKey: ["caja-inicial-hoy"] });
+      qc.invalidateQueries({ queryKey: ["historial_cajas"] });
     },
   });
 
