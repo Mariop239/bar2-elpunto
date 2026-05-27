@@ -153,27 +153,6 @@ function CajaTab() {
     refetchOnWindowFocus: true,
   });
 
-  // Recalcula historial_cajas del día si la caja ya fue cerrada (estrategia
-  // frontend porque los triggers SQL no están disponibles en el entorno actual).
-  const recalcHistorialCajas = async (deltaEgreso: number) => {
-    const { data: hist, error: selErr } = await supabase
-      .from("historial_cajas")
-      .select("id,total_arqueo,caja_inicial,total_egresos")
-      .eq("fecha", fecha)
-      .maybeSingle();
-    if (selErr) throw selErr;
-    if (!hist) return; // No hay cierre todavía, nada que recalcular
-    const nuevoEgresos = round2(Number(hist.total_egresos || 0) + deltaEgreso);
-    const nuevaVentaReal = round2(
-      Number(hist.total_arqueo || 0) - Number(hist.caja_inicial || 0) + nuevoEgresos
-    );
-    const { error: upErr } = await supabase
-      .from("historial_cajas")
-      .update({ total_egresos: nuevoEgresos, venta_real: nuevaVentaReal })
-      .eq("id", hist.id);
-    if (upErr) throw upErr;
-  };
-
   const addEgreso = useMutation({
     mutationFn: async () => {
       const m = round2(egMonto);
@@ -188,7 +167,6 @@ function CajaTab() {
         origen: "manual",
       });
       if (error) throw error;
-      await recalcHistorialCajas(m);
     },
     onSuccess: () => {
       toast.success("Egreso registrado");
@@ -205,26 +183,20 @@ function CajaTab() {
 
   const delEgreso = useMutation({
     mutationFn: async (id: string) => {
-      const { data: tx, error: txErr } = await supabase
-        .from("transacciones")
-        .select("monto")
-        .eq("id", id)
-        .maybeSingle();
-      if (txErr) throw txErr;
-      const monto = round2(tx?.monto || 0);
       const { error } = await supabase.from("transacciones").delete().eq("id", id);
       if (error) throw error;
-      if (monto > 0) await recalcHistorialCajas(-monto);
     },
     onSuccess: () => {
       toast.success("Egreso eliminado");
       qc.invalidateQueries({ queryKey: ["egresos-hoy", fecha] });
       qc.invalidateQueries({ queryKey: ["dashboard-hoy"] });
+      qc.invalidateQueries({ queryKey: ["historial"] });
       qc.invalidateQueries({ queryKey: ["arqueo-hoy"] });
       qc.invalidateQueries({ queryKey: ["caja-inicial-hoy"] });
       qc.invalidateQueries({ queryKey: ["historial_cajas"] });
     },
   });
+
 
   const ARQ_KEYS = {
     pichincha: `arqueo_banco_pichincha_${fecha}`,
