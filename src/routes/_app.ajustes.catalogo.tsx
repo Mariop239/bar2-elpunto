@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useState } from "react";
 import { toast } from "sonner";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, round2 } from "@/lib/utils";
 import { Pencil, Trash2, Search, X } from "lucide-react";
 
 export const Route = createFileRoute("/_app/ajustes/catalogo")({
@@ -64,7 +64,7 @@ function CatalogoPage() {
 
   const crear = useMutation({
     mutationFn: async () => {
-      const p = Number(precio);
+      const p = round2(precio);
       if (!nombre.trim() || !p || p < 0) throw new Error("Datos inválidos");
       const { error } = await supabase.from("productos").insert({
         nombre: nombre.trim(),
@@ -261,7 +261,7 @@ function CatalogoPage() {
               <Button
                 onClick={() => {
                   if (!editing) return;
-                  const precioNum = Number(editing.precio);
+                  const precioNum = round2(editing.precio);
                   if (!editing.nombre.trim() || !precioNum || precioNum < 0) {
                     toast.error("Datos inválidos");
                     return;

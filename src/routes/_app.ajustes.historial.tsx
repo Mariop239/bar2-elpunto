@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useState, useEffect, useMemo } from "react";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, round2 } from "@/lib/utils";
 import { FileSpreadsheet, Eye, Pencil, Save, X } from "lucide-react";
 import * as XLSX from "xlsx";
 import { useEmpleado } from "@/lib/empleado-store";
@@ -177,22 +177,23 @@ function HistorialPage() {
     mutationFn: async () => {
       if (!selected) throw new Error("Sin cierre seleccionado");
       const monedasObj: MonedasJson = {
-        m100: Number(form.monedas.m100) || 0,
-        m050: Number(form.monedas.m050) || 0,
-        m025: Number(form.monedas.m025) || 0,
-        m010: Number(form.monedas.m010) || 0,
-        m005: Number(form.monedas.m005) || 0,
-        banco_pichincha: Number(form.bancoPichincha) || 0,
-        banco_guayaquil: Number(form.bancoGuayaquil) || 0,
+        m100: round2(form.monedas.m100),
+        m050: round2(form.monedas.m050),
+        m025: round2(form.monedas.m025),
+        m010: round2(form.monedas.m010),
+        m005: round2(form.monedas.m005),
+        banco_pichincha: round2(form.bancoPichincha),
+        banco_guayaquil: round2(form.bancoGuayaquil),
       };
-      const totalMonedas =
+      const totalMonedas = round2(
         (monedasObj.m100 ?? 0) + (monedasObj.m050 ?? 0) + (monedasObj.m025 ?? 0) +
-        (monedasObj.m010 ?? 0) + (monedasObj.m005 ?? 0);
-      const bancos = (monedasObj.banco_pichincha ?? 0) + (monedasObj.banco_guayaquil ?? 0);
-      const billetes = Number(form.billetes) || 0;
-      const totalArqueo = bancos + billetes + totalMonedas;
+        (monedasObj.m010 ?? 0) + (monedasObj.m005 ?? 0)
+      );
+      const bancos = round2((monedasObj.banco_pichincha ?? 0) + (monedasObj.banco_guayaquil ?? 0));
+      const billetes = round2(form.billetes);
+      const totalArqueo = round2(bancos + billetes + totalMonedas);
       // Fórmula mágica: Venta Real = Total Arqueo - (Caja Inicial - Egresos)
-      const ventaReal = totalArqueo - (Number(selected.caja_inicial) - Number(selected.total_egresos));
+      const ventaReal = round2(totalArqueo - (Number(selected.caja_inicial) - Number(selected.total_egresos)));
 
       const { error } = await supabase
         .from("historial_cajas")

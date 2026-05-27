@@ -15,7 +15,7 @@ import { FiadosRecientes } from "@/components/fiados-recientes";
 import { toast } from "sonner";
 import { useEmpleado } from "@/lib/empleado-store";
 import { useLocalStorage } from "@/hooks/use-local-storage";
-import { formatCurrency, cn } from "@/lib/utils";
+import { formatCurrency, cn, round2 } from "@/lib/utils";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { Calendar } from "@/components/ui/calendar";
@@ -163,9 +163,10 @@ function CajaTab() {
       .maybeSingle();
     if (selErr) throw selErr;
     if (!hist) return; // No hay cierre todavía, nada que recalcular
-    const nuevoEgresos = Number(hist.total_egresos || 0) + deltaEgreso;
-    const nuevaVentaReal =
-      Number(hist.total_arqueo || 0) - Number(hist.caja_inicial || 0) + nuevoEgresos;
+    const nuevoEgresos = round2(Number(hist.total_egresos || 0) + deltaEgreso);
+    const nuevaVentaReal = round2(
+      Number(hist.total_arqueo || 0) - Number(hist.caja_inicial || 0) + nuevoEgresos
+    );
     const { error: upErr } = await supabase
       .from("historial_cajas")
       .update({ total_egresos: nuevoEgresos, venta_real: nuevaVentaReal })
@@ -175,7 +176,7 @@ function CajaTab() {
 
   const addEgreso = useMutation({
     mutationFn: async () => {
-      const m = Number(egMonto);
+      const m = round2(egMonto);
       if (!m || m <= 0) throw new Error("Monto inválido");
       const { error } = await supabase.from("transacciones").insert({
         tipo: "gasto",
@@ -210,7 +211,7 @@ function CajaTab() {
         .eq("id", id)
         .maybeSingle();
       if (txErr) throw txErr;
-      const monto = Number(tx?.monto || 0);
+      const monto = round2(tx?.monto || 0);
       const { error } = await supabase.from("transacciones").delete().eq("id", id);
       if (error) throw error;
       if (monto > 0) await recalcHistorialCajas(-monto);
@@ -287,19 +288,19 @@ function CajaTab() {
     mutationFn: async () => {
       if (!cajaInicial) throw new Error("Ingresa la Caja Inicial");
       const monedasDetalle = {
-        ...Object.fromEntries(DENOMS.map((d) => [d.key, Number(monedas[d.key]) || 0])),
-        banco_pichincha: Number(bancoPichincha) || 0,
-        banco_guayaquil: Number(bancoGuayaquil) || 0,
+        ...Object.fromEntries(DENOMS.map((d) => [d.key, round2(monedas[d.key])])),
+        banco_pichincha: round2(bancoPichincha),
+        banco_guayaquil: round2(bancoGuayaquil),
       };
       const { error } = await supabase.from("historial_cajas").upsert({
         fecha,
-        caja_inicial: Number(cajaInicial) || 0,
-        total_egresos: totalEgresos,
-        bancos: totalBancos,
-        billetes: Number(billetes) || 0,
+        caja_inicial: round2(cajaInicial),
+        total_egresos: round2(totalEgresos),
+        bancos: round2(totalBancos),
+        billetes: round2(billetes),
         monedas: monedasDetalle,
-        total_arqueo: totalArqueoCaja,
-        venta_real: ventaRealDelDia,
+        total_arqueo: round2(totalArqueoCaja),
+        venta_real: round2(ventaRealDelDia),
         empleado_id: empleado.id,
       }, { onConflict: "fecha" });
       if (error) throw error;
@@ -309,7 +310,7 @@ function CajaTab() {
       await supabase.from("transacciones").insert({
         tipo: "fondo_caja",
         metodo_pago: "efectivo",
-        monto: totalArqueoCaja,
+        monto: round2(totalArqueoCaja),
         descripcion: desc,
         empleado_id: empleado.id,
         registrado_por: empleado.nombre,
@@ -690,9 +691,9 @@ function FiadosTab() {
         cliente_id: clienteId,
         producto_id: i.producto.id,
         producto_nombre: i.producto.nombre,
-        precio_unitario: i.producto.precio,
+        precio_unitario: round2(i.producto.precio),
         cantidad: i.cantidad,
-        monto: i.cantidad * i.producto.precio,
+        monto: round2(i.cantidad * i.producto.precio),
         empleado_id: empleado.id,
         registrado_por: empleado.nombre,
         created_at: fechaDeuda.toISOString(),

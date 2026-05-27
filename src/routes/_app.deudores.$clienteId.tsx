@@ -26,7 +26,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useEmpleado } from "@/lib/empleado-store";
-import { formatCurrency, cn } from "@/lib/utils";
+import { formatCurrency, cn, round2 } from "@/lib/utils";
 
 export const Route = createFileRoute("/_app/deudores/$clienteId")({
   component: DetalleDeudor,
@@ -84,7 +84,7 @@ function DetalleDeudor() {
   const abonar = useMutation({
     mutationFn: async ({ monto, metodo }: { monto: number; metodo: Metodo }) => {
       const { error } = await supabase.rpc("aplicar_abono", {
-        p_cliente: clienteId, p_monto: monto, p_metodo: metodo, p_empleado: empleado.id,
+        p_cliente: clienteId, p_monto: round2(monto), p_metodo: metodo, p_empleado: empleado.id,
       });
       if (error) throw error;
     },
@@ -120,7 +120,7 @@ function DetalleDeudor() {
 
   const editarDeuda = useMutation({
     mutationFn: async ({ id, cantidad, precio_unitario, created_at }: { id: string; cantidad: number; precio_unitario: number; created_at: string }) => {
-      const monto = cantidad * precio_unitario;
+      const monto = round2(cantidad * precio_unitario);
       const { error } = await supabase
         .from("deudas")
         .update({ cantidad, monto, created_at })
