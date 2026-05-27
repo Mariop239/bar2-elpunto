@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useState } from "react";
 import { toast } from "sonner";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, round2 } from "@/lib/utils";
 import { Pencil, Trash2, Search, X } from "lucide-react";
 
 export const Route = createFileRoute("/_app/ajustes/catalogo")({
