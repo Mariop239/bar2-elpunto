@@ -84,7 +84,7 @@ function DetalleDeudor() {
   const abonar = useMutation({
     mutationFn: async ({ monto, metodo }: { monto: number; metodo: Metodo }) => {
       const { error } = await supabase.rpc("aplicar_abono", {
-        p_cliente: clienteId, p_monto: monto, p_metodo: metodo, p_empleado: empleado.id,
+        p_cliente: clienteId, p_monto: round2(monto), p_metodo: metodo, p_empleado: empleado.id,
       });
       if (error) throw error;
     },
