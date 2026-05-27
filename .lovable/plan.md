@@ -1,33 +1,45 @@
-### Arquitectura Multi-Empresa (Multi-Tenant)
+## Objetivo
+Eliminar errores de centavos por punto flotante: ningún número escrito a la base de datos debe tener más de 2 decimales. Solo afecta lógica de cálculo/escritura; sin cambios visuales.
 
-Para separar los datos de diferentes negocios y permitir que cada cuenta de correo (ej. `bar2uleam@gmail.com`) tenga su propio entorno aislado (productos, empleados, clientes, deudas), implementaremos una arquitectura Multi-Tenant estándar.
+## 1. Helper compartido
+En `src/lib/utils.ts` añadir:
 
-#### 1. Cambios en la Base de Datos (Migraciones)
-- **Nuevas tablas:**
-  - `empresas`: Almacenará los negocios (`id`, `nombre`, `created_at`).
-  - `perfiles`: Vinculará el usuario de Supabase Auth (`auth.uid()`) con su respectiva empresa (`id`, `empresa_id`, `rol`).
-- **Actualización de tablas existentes:**
-  - Se añadirá la columna `empresa_id` a todas las tablas operativas: `empleados`, `categorias`, `productos`, `clientes`, `deudas`, `abonos` y `transacciones`.
-- **Migración de datos legacy:**
-  - Crearemos una empresa por defecto (ej. "El Punto") y asignaremos todos los registros actuales y usuarios existentes a esta empresa para no romper la información que ya tienes.
-- **Seguridad (RLS):**
-  - Modificaremos **todas las políticas RLS**. En lugar de permitir el acceso a cualquier usuario autenticado, las políticas exigirán que el `empresa_id` del registro coincida con el `empresa_id` del usuario que inició sesión en el dispositivo.
+```ts
+export function round2(n: number | string | null | undefined): number {
+  const v = typeof n === "string" ? Number(n) : n ?? 0;
+  if (!Number.isFinite(v)) return 0;
+  return Math.round((v as number) * 100) / 100;
+}
+```
 
-#### 2. Lógica de Autenticación y Cuentas
-- **Registro de Nuevos Negocios (`/registro`):**
-  - Crearemos una nueva pantalla pública donde un usuario nuevo podrá crear su cuenta de Supabase Auth, registrar el nombre de su negocio y generar automáticamente su primer "Empleado Administrador" (para el PIN).
-- **Inicio de Sesión (`/login`):**
-  - Al iniciar sesión en el dispositivo con un correo, el sistema detectará a qué empresa pertenece y cargará **únicamente** los empleados (para el PIN) de esa empresa.
+Reutilizable en todo el frontend antes de cualquier `insert` / `update` / RPC.
 
-#### 3. Adaptación del Frontend
-- **Aislamiento de Datos:**
-  - Como el RLS se encargará de filtrar los datos en el backend, las consultas (`SELECT`) actuales seguirán funcionando, pero solo devolverán los datos del negocio activo.
-- **Inserción de Datos:**
-  - Se actualizará el estado global (ej. Zustand o un React Context) para mantener en memoria el `empresa_id` actual.
-  - Se modificarán las mutaciones (`INSERT`) en toda la app (crear producto, registrar deuda, crear empleado, etc.) para incluir el `empresa_id` del negocio activo.
-- **Funciones de la Base de Datos (`aplicar_abono`, `recalcular_saldo_cliente`):**
-  - Se actualizarán para que respeten y propaguen el contexto del `empresa_id`.
+## 2. Puntos de escritura a corregir
 
----
+### `src/routes/_app.registro.tsx`
+- `recalcHistorialCajas(deltaEgreso)`: redondear `nuevoEgresos` y `nuevaVentaReal` antes del `UPDATE` a `historial_cajas`.
+- `addEgreso.mutationFn`: redondear `m` (monto del gasto) antes del `insert` en `transacciones` y antes de pasarlo a `recalcHistorialCajas`.
+- Cierre de caja (`insert` en `historial_cajas` + `insert` en `transacciones` del arqueo): redondear `caja_inicial`, `total_egresos`, `bancos`, `billetes`, `total_arqueo`, `venta_real`, cada valor del objeto `monedas` (m100/m050/m025/m010/m005, banco_pichincha, banco_guayaquil) y el `monto` de la transacción de arqueo.
 
-**¿Estás de acuerdo con este enfoque?** Una vez lo apruebes, comenzaremos ejecutando la migración de la base de datos para estructurar todo de forma segura.
+### `src/routes/_app.ajustes.historial.tsx`
+- `guardarMut.mutationFn`: redondear `billetes`, `bancos`, `totalArqueo`, `ventaReal` y cada campo dentro de `monedasObj` antes del `update` a `historial_cajas`.
+
+### `src/routes/_app.deudores.$clienteId.tsx`
+- `editar.mutationFn`: redondear `monto = cantidad * precio_unitario` antes del `update` de `deudas` (multiplicación de decimales es la fuente clásica del bug de centavos).
+- `abonar.mutationFn`: redondear `p_monto` antes del `rpc("aplicar_abono", ...)`.
+
+### `src/routes/_app.ajustes.catalogo.tsx`
+- Crear producto: redondear `precio` antes del `insert`.
+- Editar producto: redondear `precioNum` antes del `update`.
+
+## 3. Notas técnicas
+- No se cambian valores de solo lectura ni el formato visual (`formatCurrency` ya formatea a 2 decimales).
+- No se modifica el esquema de BD ni los triggers — el redondeo se aplica en el cliente justo antes del envío, que es lo solicitado.
+- Las sumas intermedias en memoria pueden seguir como están; lo que importa es que el valor final persistido pase por `round2`.
+
+## Archivos modificados
+- `src/lib/utils.ts` (añade `round2`)
+- `src/routes/_app.registro.tsx`
+- `src/routes/_app.ajustes.historial.tsx`
+- `src/routes/_app.deudores.$clienteId.tsx`
+- `src/routes/_app.ajustes.catalogo.tsx`
