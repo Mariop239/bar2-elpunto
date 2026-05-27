@@ -26,7 +26,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useEmpleado } from "@/lib/empleado-store";
-import { formatCurrency, cn } from "@/lib/utils";
+import { formatCurrency, cn, round2 } from "@/lib/utils";
 
 export const Route = createFileRoute("/_app/deudores/$clienteId")({
   component: DetalleDeudor,
