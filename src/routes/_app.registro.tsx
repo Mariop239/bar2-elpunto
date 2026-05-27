@@ -176,7 +176,7 @@ function CajaTab() {
 
   const addEgreso = useMutation({
     mutationFn: async () => {
-      const m = Number(egMonto);
+      const m = round2(egMonto);
       if (!m || m <= 0) throw new Error("Monto inválido");
       const { error } = await supabase.from("transacciones").insert({
         tipo: "gasto",
