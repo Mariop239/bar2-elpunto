@@ -261,7 +261,7 @@ function CatalogoPage() {
               <Button
                 onClick={() => {
                   if (!editing) return;
-                  const precioNum = Number(editing.precio);
+                  const precioNum = round2(editing.precio);
                   if (!editing.nombre.trim() || !precioNum || precioNum < 0) {
                     toast.error("Datos inválidos");
                     return;
