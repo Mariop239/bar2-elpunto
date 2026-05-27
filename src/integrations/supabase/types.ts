@@ -343,6 +343,7 @@ export type Database = {
         }
         Returns: string
       }
+      recalcular_egresos_caja: { Args: { p_fecha: string }; Returns: undefined }
       recalcular_saldo_cliente: {
         Args: { p_cliente: string }
         Returns: undefined
