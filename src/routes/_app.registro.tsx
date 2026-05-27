@@ -153,6 +153,52 @@ function CajaTab() {
     refetchOnWindowFocus: true,
   });
 
+  // Recalcula total_egresos y venta_real desde cero consultando transacciones del día.
+  // Única fuente de verdad: la tabla transacciones. Evita "valores fantasma" acumulados.
+  const recalcHistorialCajas = async (fechaISO: string) => {
+    const start = new Date(`${fechaISO}T00:00:00`).toISOString();
+    const end = new Date(`${fechaISO}T23:59:59.999`).toISOString();
+
+    const { data: transaccionesDia, error: txErr } = await supabase
+      .from("transacciones")
+      .select("monto")
+      .eq("tipo", "gasto")
+      .gte("created_at", start)
+      .lte("created_at", end);
+
+    if (txErr) {
+      console.error("Error al obtener transacciones para recálculo:", txErr);
+      throw txErr;
+    }
+
+    const totalRealEgresos = round2(
+      (transaccionesDia ?? []).reduce((acc, t) => acc + Number(t.monto), 0)
+    );
+
+    const { data: hist, error: selErr } = await supabase
+      .from("historial_cajas")
+      .select("id, total_arqueo, caja_inicial")
+      .eq("fecha", fechaISO)
+      .maybeSingle();
+
+    if (selErr) throw selErr;
+    if (!hist) return;
+
+    const nuevaVentaReal = round2(
+      Number(hist.total_arqueo || 0) - Number(hist.caja_inicial || 0) + totalRealEgresos
+    );
+
+    const { error: upErr } = await supabase
+      .from("historial_cajas")
+      .update({
+        total_egresos: totalRealEgresos,
+        venta_real: nuevaVentaReal,
+      })
+      .eq("id", hist.id);
+
+    if (upErr) throw upErr;
+  };
+
   const addEgreso = useMutation({
     mutationFn: async () => {
       const m = round2(egMonto);
@@ -167,6 +213,7 @@ function CajaTab() {
         origen: "manual",
       });
       if (error) throw error;
+      await recalcHistorialCajas(fecha);
     },
     onSuccess: () => {
       toast.success("Egreso registrado");
@@ -185,6 +232,7 @@ function CajaTab() {
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("transacciones").delete().eq("id", id);
       if (error) throw error;
+      await recalcHistorialCajas(fecha);
     },
     onSuccess: () => {
       toast.success("Egreso eliminado");
