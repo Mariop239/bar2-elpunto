@@ -64,7 +64,7 @@ function CatalogoPage() {
 
   const crear = useMutation({
     mutationFn: async () => {
-      const p = Number(precio);
+      const p = round2(precio);
       if (!nombre.trim() || !p || p < 0) throw new Error("Datos inválidos");
       const { error } = await supabase.from("productos").insert({
         nombre: nombre.trim(),
