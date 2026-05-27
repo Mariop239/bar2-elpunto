@@ -211,7 +211,7 @@ function CajaTab() {
         .eq("id", id)
         .maybeSingle();
       if (txErr) throw txErr;
-      const monto = Number(tx?.monto || 0);
+      const monto = round2(tx?.monto || 0);
       const { error } = await supabase.from("transacciones").delete().eq("id", id);
       if (error) throw error;
       if (monto > 0) await recalcHistorialCajas(-monto);
