@@ -15,7 +15,7 @@ import { FiadosRecientes } from "@/components/fiados-recientes";
 import { toast } from "sonner";
 import { useEmpleado } from "@/lib/empleado-store";
 import { useLocalStorage } from "@/hooks/use-local-storage";
-import { formatCurrency, cn } from "@/lib/utils";
+import { formatCurrency, cn, round2 } from "@/lib/utils";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { Calendar } from "@/components/ui/calendar";
