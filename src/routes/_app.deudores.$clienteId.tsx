@@ -120,7 +120,7 @@ function DetalleDeudor() {
 
   const editarDeuda = useMutation({
     mutationFn: async ({ id, cantidad, precio_unitario, created_at }: { id: string; cantidad: number; precio_unitario: number; created_at: string }) => {
-      const monto = cantidad * precio_unitario;
+      const monto = round2(cantidad * precio_unitario);
       const { error } = await supabase
         .from("deudas")
         .update({ cantidad, monto, created_at })
