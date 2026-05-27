@@ -163,9 +163,10 @@ function CajaTab() {
       .maybeSingle();
     if (selErr) throw selErr;
     if (!hist) return; // No hay cierre todavía, nada que recalcular
-    const nuevoEgresos = Number(hist.total_egresos || 0) + deltaEgreso;
-    const nuevaVentaReal =
-      Number(hist.total_arqueo || 0) - Number(hist.caja_inicial || 0) + nuevoEgresos;
+    const nuevoEgresos = round2(Number(hist.total_egresos || 0) + deltaEgreso);
+    const nuevaVentaReal = round2(
+      Number(hist.total_arqueo || 0) - Number(hist.caja_inicial || 0) + nuevoEgresos
+    );
     const { error: upErr } = await supabase
       .from("historial_cajas")
       .update({ total_egresos: nuevoEgresos, venta_real: nuevaVentaReal })
