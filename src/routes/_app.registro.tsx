@@ -288,19 +288,19 @@ function CajaTab() {
     mutationFn: async () => {
       if (!cajaInicial) throw new Error("Ingresa la Caja Inicial");
       const monedasDetalle = {
-        ...Object.fromEntries(DENOMS.map((d) => [d.key, Number(monedas[d.key]) || 0])),
-        banco_pichincha: Number(bancoPichincha) || 0,
-        banco_guayaquil: Number(bancoGuayaquil) || 0,
+        ...Object.fromEntries(DENOMS.map((d) => [d.key, round2(monedas[d.key])])),
+        banco_pichincha: round2(bancoPichincha),
+        banco_guayaquil: round2(bancoGuayaquil),
       };
       const { error } = await supabase.from("historial_cajas").upsert({
         fecha,
-        caja_inicial: Number(cajaInicial) || 0,
-        total_egresos: totalEgresos,
-        bancos: totalBancos,
-        billetes: Number(billetes) || 0,
+        caja_inicial: round2(cajaInicial),
+        total_egresos: round2(totalEgresos),
+        bancos: round2(totalBancos),
+        billetes: round2(billetes),
         monedas: monedasDetalle,
-        total_arqueo: totalArqueoCaja,
-        venta_real: ventaRealDelDia,
+        total_arqueo: round2(totalArqueoCaja),
+        venta_real: round2(ventaRealDelDia),
         empleado_id: empleado.id,
       }, { onConflict: "fecha" });
       if (error) throw error;
@@ -310,7 +310,7 @@ function CajaTab() {
       await supabase.from("transacciones").insert({
         tipo: "fondo_caja",
         metodo_pago: "efectivo",
-        monto: totalArqueoCaja,
+        monto: round2(totalArqueoCaja),
         descripcion: desc,
         empleado_id: empleado.id,
         registrado_por: empleado.nombre,
