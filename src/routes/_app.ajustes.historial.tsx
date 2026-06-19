@@ -5,9 +5,10 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { useState, useEffect, useMemo } from "react";
 import { formatCurrency, round2 } from "@/lib/utils";
-import { FileSpreadsheet, Eye, Pencil, Save, X } from "lucide-react";
+import { FileSpreadsheet, Eye, Pencil, Save, X, AlertCircle, CheckCircle2 } from "lucide-react";
 import * as XLSX from "xlsx";
 import { useEmpleado } from "@/lib/empleado-store";
 import { toast } from "sonner";
@@ -63,10 +64,22 @@ type Cierre = {
   monedas: MonedasJson;
 };
 
+type RowItem =
+  | { kind: "cerrado"; fecha: string; cierre: Cierre }
+  | { kind: "pendiente"; fecha: string; ingresos: number; egresos: number };
+
 function todayISO(offset = 0) {
   const d = new Date();
   d.setDate(d.getDate() + offset);
   return d.toISOString().slice(0, 10);
+}
+
+function localDateFromISO(iso: string) {
+  const d = new Date(iso);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
 }
 
 function formatFechaCorta(iso: string) {
@@ -78,6 +91,7 @@ function HistorialPage() {
   const [desde, setDesde] = useState(todayISO(-7));
   const [hasta, setHasta] = useState(todayISO());
   const [openId, setOpenId] = useState<string | null>(null);
+  const [openPendiente, setOpenPendiente] = useState<string | null>(null);
   const [editMode, setEditMode] = useState(false);
   const [form, setForm] = useState<{
     bancoPichincha: string;
@@ -85,6 +99,21 @@ function HistorialPage() {
     billetes: string;
     monedas: Record<DenomKey, string>;
   }>({
+    bancoPichincha: "",
+    bancoGuayaquil: "",
+    billetes: "",
+    monedas: { m100: "", m050: "", m025: "", m010: "", m005: "" },
+  });
+
+  // Form para cierre retroactivo
+  const [pendForm, setPendForm] = useState<{
+    cajaInicial: string;
+    bancoPichincha: string;
+    bancoGuayaquil: string;
+    billetes: string;
+    monedas: Record<DenomKey, string>;
+  }>({
+    cajaInicial: "",
     bancoPichincha: "",
     bancoGuayaquil: "",
     billetes: "",
@@ -109,8 +138,85 @@ function HistorialPage() {
     },
   });
 
+  // Transacciones del rango (para detectar días sin cierre)
+  const txRangoQ = useQuery({
+    queryKey: ["transacciones-rango", desde, hasta],
+    queryFn: async () => {
+      const start = new Date(`${desde}T00:00:00`).toISOString();
+      const end = new Date(`${hasta}T23:59:59.999`).toISOString();
+      const { data, error } = await supabase
+        .from("transacciones")
+        .select("id, tipo, monto, created_at")
+        .gte("created_at", start)
+        .lte("created_at", end);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  // Abonos del rango (para considerar ingresos por cobros)
+  const abonosRangoQ = useQuery({
+    queryKey: ["abonos-rango", desde, hasta],
+    queryFn: async () => {
+      const start = new Date(`${desde}T00:00:00`).toISOString();
+      const end = new Date(`${hasta}T23:59:59.999`).toISOString();
+      const { data, error } = await supabase
+        .from("abonos")
+        .select("id, monto, metodo_pago, created_at")
+        .gte("created_at", start)
+        .lte("created_at", end);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
   const cierres = cierresQ.data ?? [];
+
+  // Construir mapa de actividad por fecha local
+  const actividadPorFecha = useMemo(() => {
+    const map = new Map<string, { ingresos: number; egresos: number }>();
+    for (const t of txRangoQ.data ?? []) {
+      const f = localDateFromISO(t.created_at as string);
+      const cur = map.get(f) ?? { ingresos: 0, egresos: 0 };
+      const monto = Number(t.monto) || 0;
+      if (t.tipo === "gasto") cur.egresos += monto;
+      else if (t.tipo === "ingreso") cur.ingresos += monto;
+      map.set(f, cur);
+    }
+    for (const a of abonosRangoQ.data ?? []) {
+      const f = localDateFromISO(a.created_at as string);
+      const cur = map.get(f) ?? { ingresos: 0, egresos: 0 };
+      cur.ingresos += Number(a.monto) || 0;
+      map.set(f, cur);
+    }
+    return map;
+  }, [txRangoQ.data, abonosRangoQ.data]);
+
+  const today = todayISO();
+  const fechasCerradas = useMemo(() => new Set(cierres.map((c) => c.fecha)), [cierres]);
+
+  const pendientes = useMemo<RowItem[]>(() => {
+    const items: RowItem[] = [];
+    for (const [fecha, act] of actividadPorFecha.entries()) {
+      if (fecha >= today) continue; // hoy aún se puede cerrar normalmente
+      if (fechasCerradas.has(fecha)) continue;
+      items.push({ kind: "pendiente", fecha, ingresos: round2(act.ingresos), egresos: round2(act.egresos) });
+    }
+    return items;
+  }, [actividadPorFecha, fechasCerradas, today]);
+
+  const filas = useMemo<RowItem[]>(() => {
+    const cerradas: RowItem[] = cierres.map((c) => ({ kind: "cerrado", fecha: c.fecha, cierre: c }));
+    return [...cerradas, ...pendientes].sort((a, b) => (a.fecha < b.fecha ? 1 : -1));
+  }, [cierres, pendientes]);
+
   const selected = useMemo(() => cierres.find((c) => c.id === openId) ?? null, [cierres, openId]);
+  const selectedPend = useMemo(
+    () => pendientes.find((p) => p.kind === "pendiente" && p.fecha === openPendiente) as
+      | (RowItem & { kind: "pendiente" })
+      | undefined,
+    [pendientes, openPendiente]
+  );
 
   // Cargar formulario cuando se abre un cierre
   useEffect(() => {
@@ -131,6 +237,18 @@ function HistorialPage() {
     setEditMode(false);
   }, [selected?.id]);
 
+  // Reset form pendiente al cambiar
+  useEffect(() => {
+    if (!openPendiente) return;
+    setPendForm({
+      cajaInicial: "",
+      bancoPichincha: "",
+      bancoGuayaquil: "",
+      billetes: "",
+      monedas: { m100: "", m050: "", m025: "", m010: "", m005: "" },
+    });
+  }, [openPendiente]);
+
   const egresosDiaQ = useQuery({
     queryKey: ["egresos-dia-detalle", selected?.fecha],
     enabled: !!selected?.fecha,
@@ -149,6 +267,26 @@ function HistorialPage() {
     },
   });
 
+  // Detalle de gastos del día pendiente seleccionado
+  const egresosPendDiaQ = useQuery({
+    queryKey: ["egresos-dia-detalle", selectedPend?.fecha],
+    enabled: !!selectedPend?.fecha,
+    queryFn: async () => {
+      const start = new Date(`${selectedPend!.fecha}T00:00:00`).toISOString();
+      const end = new Date(`${selectedPend!.fecha}T23:59:59.999`).toISOString();
+      const { data, error } = await supabase
+        .from("transacciones")
+        .select("id, descripcion, monto, created_at, tipo")
+        .eq("tipo", "gasto")
+        .gte("created_at", start)
+        .lte("created_at", end)
+        .order("created_at", { ascending: true });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  // Totales globales: SOLO cierres confirmados (excluye pendientes)
   const totales = cierres.reduce(
     (acc, c) => {
       acc.ventaReal += Number(c.venta_real);
@@ -192,7 +330,6 @@ function HistorialPage() {
       const bancos = round2((monedasObj.banco_pichincha ?? 0) + (monedasObj.banco_guayaquil ?? 0));
       const billetes = round2(form.billetes);
       const totalArqueo = round2(bancos + billetes + totalMonedas);
-      // Fórmula mágica: Venta Real = Total Arqueo - (Caja Inicial - Egresos)
       const ventaReal = round2(totalArqueo - (Number(selected.caja_inicial) - Number(selected.total_egresos)));
 
       const { error } = await supabase
@@ -230,6 +367,68 @@ function HistorialPage() {
     return { totalMonedas, bancos, billetes, totalArqueo, ventaReal };
   }, [form, selected]);
 
+  // Cálculos en vivo durante cierre retroactivo
+  const pendCalc = useMemo(() => {
+    if (!selectedPend) return null;
+    const totalMonedas = DENOMS.reduce((s, d) => s + (Number(pendForm.monedas[d.key]) || 0), 0);
+    const bancos = (Number(pendForm.bancoPichincha) || 0) + (Number(pendForm.bancoGuayaquil) || 0);
+    const billetes = Number(pendForm.billetes) || 0;
+    const totalArqueo = bancos + billetes + totalMonedas;
+    const cajaInicial = Number(pendForm.cajaInicial) || 0;
+    const ventaReal = totalArqueo - (cajaInicial - selectedPend.egresos);
+    return { totalMonedas, bancos, billetes, totalArqueo, ventaReal, cajaInicial };
+  }, [pendForm, selectedPend]);
+
+  const cerrarRetroMut = useMutation({
+    mutationFn: async () => {
+      if (!selectedPend) throw new Error("Sin día seleccionado");
+      if (!empleado?.id) throw new Error("Sin empleado activo");
+      const monedasObj: MonedasJson = {
+        m100: round2(pendForm.monedas.m100),
+        m050: round2(pendForm.monedas.m050),
+        m025: round2(pendForm.monedas.m025),
+        m010: round2(pendForm.monedas.m010),
+        m005: round2(pendForm.monedas.m005),
+        banco_pichincha: round2(pendForm.bancoPichincha),
+        banco_guayaquil: round2(pendForm.bancoGuayaquil),
+      };
+      const totalMonedas = round2(
+        (monedasObj.m100 ?? 0) + (monedasObj.m050 ?? 0) + (monedasObj.m025 ?? 0) +
+        (monedasObj.m010 ?? 0) + (monedasObj.m005 ?? 0)
+      );
+      const bancos = round2((monedasObj.banco_pichincha ?? 0) + (monedasObj.banco_guayaquil ?? 0));
+      const billetes = round2(pendForm.billetes);
+      const totalArqueo = round2(bancos + billetes + totalMonedas);
+      const cajaInicial = round2(pendForm.cajaInicial);
+      const totalEgresos = round2(selectedPend.egresos);
+      const ventaReal = round2(totalArqueo - (cajaInicial - totalEgresos));
+
+      const { error } = await supabase.from("historial_cajas").upsert({
+        fecha: selectedPend.fecha,
+        caja_inicial: cajaInicial,
+        total_egresos: totalEgresos,
+        bancos,
+        billetes,
+        monedas: monedasObj,
+        total_arqueo: totalArqueo,
+        venta_real: ventaReal,
+        empleado_id: empleado.id,
+      }, { onConflict: "fecha" });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Caja cerrada retroactivamente");
+      setOpenPendiente(null);
+      qc.invalidateQueries({ queryKey: ["historial-cajas-rango"] });
+      qc.invalidateQueries({ queryKey: ["transacciones-rango"] });
+      qc.invalidateQueries({ queryKey: ["abonos-rango"] });
+      qc.invalidateQueries({ queryKey: ["historial"] });
+      qc.invalidateQueries({ queryKey: ["dashboard-hoy"] });
+      qc.invalidateQueries({ queryKey: ["ultimo-cierre"] });
+    },
+    onError: (err: any) => toast.error("Error al cerrar caja", { description: err.message }),
+  });
+
   return (
     <div className="space-y-4">
       <Card className="p-4 grid sm:grid-cols-3 gap-3 items-end">
@@ -251,7 +450,7 @@ function HistorialPage() {
         <Card className="p-3">
           <p className="text-xs text-muted-foreground">Venta Real Total</p>
           <p className="font-bold text-success">{formatCurrency(totales.ventaReal)}</p>
-          <p className="text-[10px] text-muted-foreground mt-0.5">{cierres.length} día(s)</p>
+          <p className="text-[10px] text-muted-foreground mt-0.5">{cierres.length} día(s) cerrado(s)</p>
         </Card>
         <Card className="p-3">
           <p className="text-xs text-muted-foreground">Egresos Totales</p>
@@ -263,6 +462,17 @@ function HistorialPage() {
         </Card>
       </div>
 
+      {pendientes.length > 0 && (
+        <Card className="p-3 border-amber-500/40 bg-amber-500/5">
+          <div className="flex items-center gap-2 text-sm">
+            <AlertCircle className="h-4 w-4 text-amber-600" />
+            <span>
+              <strong>{pendientes.length}</strong> día(s) con actividad sin cierre de caja. No se incluyen en los totales hasta confirmarlos.
+            </span>
+          </div>
+        </Card>
+      )}
+
       <Card className="p-4">
         <h2 className="text-lg font-semibold mb-3">Cierres de Caja</h2>
         <div className="rounded-md border overflow-x-auto">
@@ -270,6 +480,7 @@ function HistorialPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Fecha</TableHead>
+                <TableHead>Estado</TableHead>
                 <TableHead className="text-right">Caja Inicial</TableHead>
                 <TableHead className="text-right">Egresos</TableHead>
                 <TableHead className="text-right">Total Arqueo</TableHead>
@@ -278,25 +489,66 @@ function HistorialPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {cierres.map((c) => (
-                <TableRow key={c.id}>
-                  <TableCell className="font-medium">{formatFechaCorta(c.fecha)}</TableCell>
-                  <TableCell className="text-right">{formatCurrency(Number(c.caja_inicial))}</TableCell>
-                  <TableCell className="text-right text-destructive">{formatCurrency(Number(c.total_egresos))}</TableCell>
-                  <TableCell className="text-right">{formatCurrency(Number(c.total_arqueo))}</TableCell>
-                  <TableCell className="text-right font-semibold text-success">{formatCurrency(Number(c.venta_real))}</TableCell>
-                  <TableCell className="text-right">
-                    <Button size="sm" variant="outline" onClick={() => setOpenId(c.id)}>
-                      <Eye className="h-4 w-4 mr-1" />
-                      Ver detalles
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {cierres.length === 0 && (
+              {filas.map((row) => {
+                if (row.kind === "cerrado") {
+                  const c = row.cierre;
+                  return (
+                    <TableRow key={c.id}>
+                      <TableCell className="font-medium">{formatFechaCorta(c.fecha)}</TableCell>
+                      <TableCell>
+                        <Badge variant="secondary" className="gap-1">
+                          <CheckCircle2 className="h-3 w-3" />
+                          Cerrado
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">{formatCurrency(Number(c.caja_inicial))}</TableCell>
+                      <TableCell className="text-right text-destructive">{formatCurrency(Number(c.total_egresos))}</TableCell>
+                      <TableCell className="text-right">{formatCurrency(Number(c.total_arqueo))}</TableCell>
+                      <TableCell className="text-right font-semibold text-success">{formatCurrency(Number(c.venta_real))}</TableCell>
+                      <TableCell className="text-right">
+                        <Button size="sm" variant="outline" onClick={() => setOpenId(c.id)}>
+                          <Eye className="h-4 w-4 mr-1" />
+                          Ver detalles
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                }
+                return (
+                  <TableRow
+                    key={`pend-${row.fecha}`}
+                    className="bg-amber-500/5 hover:bg-amber-500/10 cursor-pointer"
+                    onClick={() => setOpenPendiente(row.fecha)}
+                  >
+                    <TableCell className="font-medium">{formatFechaCorta(row.fecha)}</TableCell>
+                    <TableCell>
+                      <Badge variant="destructive" className="gap-1">
+                        <AlertCircle className="h-3 w-3" />
+                        No Cerrado
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right text-muted-foreground">—</TableCell>
+                    <TableCell className="text-right text-destructive">{formatCurrency(row.egresos)}</TableCell>
+                    <TableCell className="text-right text-muted-foreground">—</TableCell>
+                    <TableCell className="text-right text-muted-foreground italic">Pendiente</TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOpenPendiente(row.fecha);
+                        }}
+                      >
+                        Cerrar caja
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+              {filas.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                    Sin cierres en el rango seleccionado
+                  <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                    Sin cierres ni actividad en el rango seleccionado
                   </TableCell>
                 </TableRow>
               )}
@@ -315,7 +567,6 @@ function HistorialPage() {
               </SheetHeader>
 
               <div className="mt-6 space-y-6">
-                {/* Grupo A: Totales */}
                 <section className="space-y-2">
                   <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Totales</h3>
                   <div className="rounded-lg border divide-y">
@@ -369,7 +620,6 @@ function HistorialPage() {
                   </Accordion>
                 </section>
 
-                {/* Grupo B: Efectivo físico */}
                 <section className="space-y-2">
                   <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Efectivo Físico</h3>
                   <div className="rounded-lg border divide-y">
@@ -393,7 +643,6 @@ function HistorialPage() {
                   </div>
                 </section>
 
-                {/* Grupo C: Bancos */}
                 <section className="space-y-2">
                   <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Bancos</h3>
                   <div className="rounded-lg border divide-y">
@@ -444,6 +693,186 @@ function HistorialPage() {
                     )}
                   </div>
                 )}
+              </div>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
+
+      {/* Sheet: cierre retroactivo de día pendiente */}
+      <Sheet open={!!openPendiente} onOpenChange={(v) => !v && setOpenPendiente(null)}>
+        <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+          {selectedPend && (
+            <>
+              <SheetHeader>
+                <SheetTitle className="flex items-center gap-2">
+                  Cierre Retroactivo
+                  <Badge variant="destructive" className="gap-1">
+                    <AlertCircle className="h-3 w-3" />
+                    Pendiente
+                  </Badge>
+                </SheetTitle>
+                <SheetDescription>{formatFechaCorta(selectedPend.fecha)}</SheetDescription>
+              </SheetHeader>
+
+              <div className="mt-6 space-y-6">
+                <section className="space-y-2">
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                    Actividad del Día
+                  </h3>
+                  <div className="rounded-lg border divide-y">
+                    <Row
+                      label="Ingresos (cobros / ventas)"
+                      value={formatCurrency(selectedPend.ingresos)}
+                      valueClass="text-success"
+                    />
+                    <Row
+                      label="Egresos (gastos)"
+                      value={formatCurrency(selectedPend.egresos)}
+                      valueClass="text-destructive"
+                    />
+                  </div>
+
+                  <Accordion type="single" collapsible className="rounded-lg border px-3">
+                    <AccordionItem value="gastos-pend" className="border-b-0">
+                      <AccordionTrigger className="text-sm">
+                        <span className="flex-1 text-left">Ver lista de gastos del día</span>
+                        {egresosPendDiaQ.data && (
+                          <span className="mr-2 text-xs text-muted-foreground">
+                            {egresosPendDiaQ.data.length} {egresosPendDiaQ.data.length === 1 ? "gasto" : "gastos"}
+                          </span>
+                        )}
+                      </AccordionTrigger>
+                      <AccordionContent>
+                        {egresosPendDiaQ.isLoading ? (
+                          <p className="text-sm text-muted-foreground py-2">Cargando...</p>
+                        ) : (egresosPendDiaQ.data?.length ?? 0) === 0 ? (
+                          <p className="text-sm text-muted-foreground py-2 italic">
+                            No se registraron gastos este día
+                          </p>
+                        ) : (
+                          <ul className="divide-y">
+                            {egresosPendDiaQ.data!.map((g) => (
+                              <li key={g.id} className="flex items-center justify-between gap-3 py-2.5">
+                                <span className="text-sm text-foreground truncate">
+                                  {g.descripcion?.trim() || "Sin descripción"}
+                                </span>
+                                <span className="text-sm font-medium text-destructive whitespace-nowrap">
+                                  {formatCurrency(Number(g.monto))}
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
+                </section>
+
+                <section className="space-y-2">
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                    Caja Inicial
+                  </h3>
+                  <div className="rounded-lg border">
+                    <div className="flex items-center justify-between gap-3 px-4 py-3">
+                      <span className="text-sm text-muted-foreground">Dinero al iniciar el día</span>
+                      <Input
+                        type="number"
+                        inputMode="decimal"
+                        step="0.01"
+                        value={pendForm.cajaInicial}
+                        onChange={(e) => setPendForm((f) => ({ ...f, cajaInicial: e.target.value }))}
+                        placeholder="0.00"
+                        className="h-9 w-32 text-right"
+                      />
+                    </div>
+                  </div>
+                </section>
+
+                <section className="space-y-2">
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                    Efectivo Físico (Cierre)
+                  </h3>
+                  <div className="rounded-lg border divide-y">
+                    <EditableRow
+                      label="Total Billetes"
+                      editing
+                      value={pendForm.billetes}
+                      readValue={0}
+                      onChange={(v) => setPendForm((f) => ({ ...f, billetes: v }))}
+                    />
+                    {DENOMS.map((d) => (
+                      <EditableRow
+                        key={d.key}
+                        label={d.label}
+                        editing
+                        value={pendForm.monedas[d.key]}
+                        readValue={0}
+                        onChange={(v) =>
+                          setPendForm((f) => ({ ...f, monedas: { ...f.monedas, [d.key]: v } }))
+                        }
+                      />
+                    ))}
+                  </div>
+                </section>
+
+                <section className="space-y-2">
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                    Bancos
+                  </h3>
+                  <div className="rounded-lg border divide-y">
+                    <EditableRow
+                      label="Banco Pichincha"
+                      editing
+                      value={pendForm.bancoPichincha}
+                      readValue={0}
+                      onChange={(v) => setPendForm((f) => ({ ...f, bancoPichincha: v }))}
+                    />
+                    <EditableRow
+                      label="Banco Guayaquil"
+                      editing
+                      value={pendForm.bancoGuayaquil}
+                      readValue={0}
+                      onChange={(v) => setPendForm((f) => ({ ...f, bancoGuayaquil: v }))}
+                    />
+                  </div>
+                </section>
+
+                {pendCalc && (
+                  <section className="space-y-2">
+                    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                      Resumen
+                    </h3>
+                    <div className="rounded-lg border divide-y">
+                      <Row label="Total Arqueo" value={formatCurrency(pendCalc.totalArqueo)} valueClass="font-semibold" />
+                      <Row
+                        label="Venta Real del Día"
+                        value={formatCurrency(pendCalc.ventaReal)}
+                        valueClass="font-bold text-success text-base"
+                      />
+                    </div>
+                  </section>
+                )}
+
+                <div className="flex gap-2 pt-2">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => setOpenPendiente(null)}
+                    disabled={cerrarRetroMut.isPending}
+                  >
+                    <X className="h-4 w-4 mr-2" />
+                    Cancelar
+                  </Button>
+                  <Button
+                    className="flex-1"
+                    onClick={() => cerrarRetroMut.mutate()}
+                    disabled={cerrarRetroMut.isPending}
+                  >
+                    <Save className="h-4 w-4 mr-2" />
+                    {cerrarRetroMut.isPending ? "Guardando..." : "Confirmar y Cerrar Caja"}
+                  </Button>
+                </div>
               </div>
             </>
           )}
