@@ -120,6 +120,12 @@ function HistorialPage() {
     monedas: { m100: "", m050: "", m025: "", m010: "", m005: "" },
   });
 
+  // Form para añadir gasto omitido al día pendiente
+  const [gastoOmitido, setGastoOmitido] = useState<{ monto: string; descripcion: string }>({
+    monto: "",
+    descripcion: "",
+  });
+
   const { empleado } = useEmpleado();
   const isAdmin = empleado?.rol === "admin";
   const qc = useQueryClient();
@@ -172,20 +178,26 @@ function HistorialPage() {
 
   const cierres = cierresQ.data ?? [];
 
-  // Construir mapa de actividad por fecha local
+  // Construir mapa de actividad por fecha local.
+  // Solo las transacciones con tipo === 'gasto' marcan el día como pendiente
+  // (los ingresos por abonos/cobros de fiados NO deben generar fila "No Cerrado").
   const actividadPorFecha = useMemo(() => {
-    const map = new Map<string, { ingresos: number; egresos: number }>();
+    const map = new Map<string, { ingresos: number; egresos: number; tieneGasto: boolean }>();
     for (const t of txRangoQ.data ?? []) {
       const f = localDateFromISO(t.created_at as string);
-      const cur = map.get(f) ?? { ingresos: 0, egresos: 0 };
+      const cur = map.get(f) ?? { ingresos: 0, egresos: 0, tieneGasto: false };
       const monto = Number(t.monto) || 0;
-      if (t.tipo === "gasto") cur.egresos += monto;
-      else if (t.tipo === "ingreso") cur.ingresos += monto;
+      if (t.tipo === "gasto") {
+        cur.egresos += monto;
+        cur.tieneGasto = true;
+      } else if (t.tipo === "ingreso") {
+        cur.ingresos += monto;
+      }
       map.set(f, cur);
     }
     for (const a of abonosRangoQ.data ?? []) {
       const f = localDateFromISO(a.created_at as string);
-      const cur = map.get(f) ?? { ingresos: 0, egresos: 0 };
+      const cur = map.get(f) ?? { ingresos: 0, egresos: 0, tieneGasto: false };
       cur.ingresos += Number(a.monto) || 0;
       map.set(f, cur);
     }
@@ -200,6 +212,8 @@ function HistorialPage() {
     for (const [fecha, act] of actividadPorFecha.entries()) {
       if (fecha >= today) continue; // hoy aún se puede cerrar normalmente
       if (fechasCerradas.has(fecha)) continue;
+      // Solo días con al menos un GASTO real activan la fila virtual "No Cerrado".
+      if (!act.tieneGasto) continue;
       items.push({ kind: "pendiente", fecha, ingresos: round2(act.ingresos), egresos: round2(act.egresos) });
     }
     return items;
@@ -247,6 +261,7 @@ function HistorialPage() {
       billetes: "",
       monedas: { m100: "", m050: "", m025: "", m010: "", m005: "" },
     });
+    setGastoOmitido({ monto: "", descripcion: "" });
   }, [openPendiente]);
 
   const egresosDiaQ = useQuery({
@@ -367,6 +382,16 @@ function HistorialPage() {
     return { totalMonedas, bancos, billetes, totalArqueo, ventaReal };
   }, [form, selected]);
 
+  // Egresos en vivo del día pendiente (recalculados desde la lista del Sheet
+  // para que el total cambie al añadir un "gasto omitido" sin recargar).
+  const liveEgresosPend = useMemo(() => {
+    if (!selectedPend) return 0;
+    if (egresosPendDiaQ.data) {
+      return round2(egresosPendDiaQ.data.reduce((s, g) => s + (Number(g.monto) || 0), 0));
+    }
+    return selectedPend.egresos;
+  }, [egresosPendDiaQ.data, selectedPend]);
+
   // Cálculos en vivo durante cierre retroactivo
   const pendCalc = useMemo(() => {
     if (!selectedPend) return null;
@@ -375,9 +400,9 @@ function HistorialPage() {
     const billetes = Number(pendForm.billetes) || 0;
     const totalArqueo = bancos + billetes + totalMonedas;
     const cajaInicial = Number(pendForm.cajaInicial) || 0;
-    const ventaReal = totalArqueo - (cajaInicial - selectedPend.egresos);
+    const ventaReal = totalArqueo - (cajaInicial - liveEgresosPend);
     return { totalMonedas, bancos, billetes, totalArqueo, ventaReal, cajaInicial };
-  }, [pendForm, selectedPend]);
+  }, [pendForm, selectedPend, liveEgresosPend]);
 
   const cerrarRetroMut = useMutation({
     mutationFn: async () => {
@@ -400,7 +425,7 @@ function HistorialPage() {
       const billetes = round2(pendForm.billetes);
       const totalArqueo = round2(bancos + billetes + totalMonedas);
       const cajaInicial = round2(pendForm.cajaInicial);
-      const totalEgresos = round2(selectedPend.egresos);
+      const totalEgresos = round2(liveEgresosPend);
       const ventaReal = round2(totalArqueo - (cajaInicial - totalEgresos));
 
       const { error } = await supabase.from("historial_cajas").upsert({
@@ -427,6 +452,41 @@ function HistorialPage() {
       qc.invalidateQueries({ queryKey: ["ultimo-cierre"] });
     },
     onError: (err: any) => toast.error("Error al cerrar caja", { description: err.message }),
+  });
+
+  // Añadir gasto omitido a un día pendiente (created_at = fecha del historial, no hoy)
+  const addGastoOmitidoMut = useMutation({
+    mutationFn: async () => {
+      if (!selectedPend) throw new Error("Sin día seleccionado");
+      const monto = round2(gastoOmitido.monto);
+      if (!Number.isFinite(monto) || monto <= 0) throw new Error("Ingresa un monto válido");
+      const descripcion = gastoOmitido.descripcion.trim() || "Gasto omitido";
+      // Inyectar created_at con la fecha exacta del día revisado (mediodía local
+      // para evitar saltos de zona horaria).
+      const createdAt = new Date(`${selectedPend.fecha}T12:00:00`).toISOString();
+      const { error } = await supabase.from("transacciones").insert({
+        tipo: "gasto",
+        monto,
+        descripcion,
+        metodo_pago: "efectivo",
+        origen: "manual",
+        created_at: createdAt,
+        empleado_id: empleado?.id ?? null,
+        registrado_por: empleado?.nombre ?? null,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Gasto añadido al día");
+      setGastoOmitido({ monto: "", descripcion: "" });
+      // Refresca lista del panel + total dinámico en la parte superior del Sheet
+      qc.invalidateQueries({ queryKey: ["egresos-dia-detalle", selectedPend?.fecha] });
+      qc.invalidateQueries({ queryKey: ["transacciones-rango"] });
+      qc.invalidateQueries({ queryKey: ["egresos-hoy"] });
+      qc.invalidateQueries({ queryKey: ["dashboard-hoy"] });
+      qc.invalidateQueries({ queryKey: ["historial"] });
+    },
+    onError: (err: any) => toast.error("Error al añadir gasto", { description: err.message }),
   });
 
   return (
@@ -717,19 +777,29 @@ function HistorialPage() {
 
               <div className="mt-6 space-y-6">
                 <section className="space-y-2">
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-                    Actividad del Día
-                  </h3>
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Totales</h3>
                   <div className="rounded-lg border divide-y">
-                    <Row
-                      label="Ingresos (cobros / ventas)"
-                      value={formatCurrency(selectedPend.ingresos)}
-                      valueClass="text-success"
+                    <EditableRow
+                      label="Caja Inicial"
+                      editing
+                      value={pendForm.cajaInicial}
+                      readValue={0}
+                      onChange={(v) => setPendForm((f) => ({ ...f, cajaInicial: v }))}
                     />
                     <Row
-                      label="Egresos (gastos)"
-                      value={formatCurrency(selectedPend.egresos)}
+                      label="Egresos Totales"
+                      value={formatCurrency(liveEgresosPend)}
                       valueClass="text-destructive"
+                    />
+                    <Row
+                      label="Total Arqueo"
+                      value={formatCurrency(pendCalc?.totalArqueo ?? 0)}
+                      valueClass="font-semibold"
+                    />
+                    <Row
+                      label="Venta Real del Día"
+                      value={formatCurrency(pendCalc?.ventaReal ?? 0)}
+                      valueClass="font-bold text-success text-base"
                     />
                   </div>
 
@@ -767,32 +837,59 @@ function HistorialPage() {
                       </AccordionContent>
                     </AccordionItem>
                   </Accordion>
+
+                  <Accordion type="single" collapsible className="rounded-lg border border-dashed px-3">
+                    <AccordionItem value="add-gasto-omitido" className="border-b-0">
+                      <AccordionTrigger className="text-sm">
+                        <span className="flex-1 text-left text-primary font-medium">
+                          + Añadir Gasto Omitido
+                        </span>
+                      </AccordionTrigger>
+                      <AccordionContent>
+                        <div className="space-y-3 py-2">
+                          <p className="text-xs text-muted-foreground">
+                            Se registrará con la fecha del día revisado ({formatFechaCorta(selectedPend.fecha)}).
+                          </p>
+                          <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] gap-2">
+                            <div>
+                              <Label className="text-xs">Monto</Label>
+                              <Input
+                                type="number"
+                                inputMode="decimal"
+                                step="0.01"
+                                value={gastoOmitido.monto}
+                                onChange={(e) => setGastoOmitido((g) => ({ ...g, monto: e.target.value }))}
+                                placeholder="0.00"
+                                className="h-10"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs">Descripción</Label>
+                              <Input
+                                value={gastoOmitido.descripcion}
+                                onChange={(e) => setGastoOmitido((g) => ({ ...g, descripcion: e.target.value }))}
+                                placeholder="Ej: Compra de hielo"
+                                className="h-10"
+                              />
+                            </div>
+                          </div>
+                          <Button
+                            size="sm"
+                            className="w-full"
+                            onClick={() => addGastoOmitidoMut.mutate()}
+                            disabled={addGastoOmitidoMut.isPending || !gastoOmitido.monto}
+                          >
+                            <Save className="h-4 w-4 mr-2" />
+                            {addGastoOmitidoMut.isPending ? "Guardando..." : "Guardar Gasto"}
+                          </Button>
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
                 </section>
 
                 <section className="space-y-2">
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-                    Caja Inicial
-                  </h3>
-                  <div className="rounded-lg border">
-                    <div className="flex items-center justify-between gap-3 px-4 py-3">
-                      <span className="text-sm text-muted-foreground">Dinero al iniciar el día</span>
-                      <Input
-                        type="number"
-                        inputMode="decimal"
-                        step="0.01"
-                        value={pendForm.cajaInicial}
-                        onChange={(e) => setPendForm((f) => ({ ...f, cajaInicial: e.target.value }))}
-                        placeholder="0.00"
-                        className="h-9 w-32 text-right"
-                      />
-                    </div>
-                  </div>
-                </section>
-
-                <section className="space-y-2">
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-                    Efectivo Físico (Cierre)
-                  </h3>
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Efectivo Físico</h3>
                   <div className="rounded-lg border divide-y">
                     <EditableRow
                       label="Total Billetes"
@@ -817,9 +914,7 @@ function HistorialPage() {
                 </section>
 
                 <section className="space-y-2">
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-                    Bancos
-                  </h3>
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Bancos</h3>
                   <div className="rounded-lg border divide-y">
                     <EditableRow
                       label="Banco Pichincha"
@@ -838,21 +933,6 @@ function HistorialPage() {
                   </div>
                 </section>
 
-                {pendCalc && (
-                  <section className="space-y-2">
-                    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-                      Resumen
-                    </h3>
-                    <div className="rounded-lg border divide-y">
-                      <Row label="Total Arqueo" value={formatCurrency(pendCalc.totalArqueo)} valueClass="font-semibold" />
-                      <Row
-                        label="Venta Real del Día"
-                        value={formatCurrency(pendCalc.ventaReal)}
-                        valueClass="font-bold text-success text-base"
-                      />
-                    </div>
-                  </section>
-                )}
 
                 <div className="flex gap-2 pt-2">
                   <Button
