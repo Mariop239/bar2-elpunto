@@ -382,6 +382,16 @@ function HistorialPage() {
     return { totalMonedas, bancos, billetes, totalArqueo, ventaReal };
   }, [form, selected]);
 
+  // Egresos en vivo del día pendiente (recalculados desde la lista del Sheet
+  // para que el total cambie al añadir un "gasto omitido" sin recargar).
+  const liveEgresosPend = useMemo(() => {
+    if (!selectedPend) return 0;
+    if (egresosPendDiaQ.data) {
+      return round2(egresosPendDiaQ.data.reduce((s, g) => s + (Number(g.monto) || 0), 0));
+    }
+    return selectedPend.egresos;
+  }, [egresosPendDiaQ.data, selectedPend]);
+
   // Cálculos en vivo durante cierre retroactivo
   const pendCalc = useMemo(() => {
     if (!selectedPend) return null;
@@ -390,9 +400,9 @@ function HistorialPage() {
     const billetes = Number(pendForm.billetes) || 0;
     const totalArqueo = bancos + billetes + totalMonedas;
     const cajaInicial = Number(pendForm.cajaInicial) || 0;
-    const ventaReal = totalArqueo - (cajaInicial - selectedPend.egresos);
+    const ventaReal = totalArqueo - (cajaInicial - liveEgresosPend);
     return { totalMonedas, bancos, billetes, totalArqueo, ventaReal, cajaInicial };
-  }, [pendForm, selectedPend]);
+  }, [pendForm, selectedPend, liveEgresosPend]);
 
   const cerrarRetroMut = useMutation({
     mutationFn: async () => {
