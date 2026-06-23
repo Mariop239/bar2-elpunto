@@ -444,6 +444,41 @@ function HistorialPage() {
     onError: (err: any) => toast.error("Error al cerrar caja", { description: err.message }),
   });
 
+  // Añadir gasto omitido a un día pendiente (created_at = fecha del historial, no hoy)
+  const addGastoOmitidoMut = useMutation({
+    mutationFn: async () => {
+      if (!selectedPend) throw new Error("Sin día seleccionado");
+      const monto = round2(gastoOmitido.monto);
+      if (!Number.isFinite(monto) || monto <= 0) throw new Error("Ingresa un monto válido");
+      const descripcion = gastoOmitido.descripcion.trim() || "Gasto omitido";
+      // Inyectar created_at con la fecha exacta del día revisado (mediodía local
+      // para evitar saltos de zona horaria).
+      const createdAt = new Date(`${selectedPend.fecha}T12:00:00`).toISOString();
+      const { error } = await supabase.from("transacciones").insert({
+        tipo: "gasto",
+        monto,
+        descripcion,
+        metodo_pago: "efectivo",
+        origen: "manual",
+        created_at: createdAt,
+        empleado_id: empleado?.id ?? null,
+        registrado_por: empleado?.nombre ?? null,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Gasto añadido al día");
+      setGastoOmitido({ monto: "", descripcion: "" });
+      // Refresca lista del panel + total dinámico en la parte superior del Sheet
+      qc.invalidateQueries({ queryKey: ["egresos-dia-detalle", selectedPend?.fecha] });
+      qc.invalidateQueries({ queryKey: ["transacciones-rango"] });
+      qc.invalidateQueries({ queryKey: ["egresos-hoy"] });
+      qc.invalidateQueries({ queryKey: ["dashboard-hoy"] });
+      qc.invalidateQueries({ queryKey: ["historial"] });
+    },
+    onError: (err: any) => toast.error("Error al añadir gasto", { description: err.message }),
+  });
+
   return (
     <div className="space-y-4">
       <Card className="p-4 grid sm:grid-cols-3 gap-3 items-end">
