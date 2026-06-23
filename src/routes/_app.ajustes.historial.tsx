@@ -120,6 +120,12 @@ function HistorialPage() {
     monedas: { m100: "", m050: "", m025: "", m010: "", m005: "" },
   });
 
+  // Form para añadir gasto omitido al día pendiente
+  const [gastoOmitido, setGastoOmitido] = useState<{ monto: string; descripcion: string }>({
+    monto: "",
+    descripcion: "",
+  });
+
   const { empleado } = useEmpleado();
   const isAdmin = empleado?.rol === "admin";
   const qc = useQueryClient();
