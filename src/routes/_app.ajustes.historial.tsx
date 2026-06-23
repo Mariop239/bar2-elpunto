@@ -777,19 +777,29 @@ function HistorialPage() {
 
               <div className="mt-6 space-y-6">
                 <section className="space-y-2">
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-                    Actividad del Día
-                  </h3>
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Totales</h3>
                   <div className="rounded-lg border divide-y">
-                    <Row
-                      label="Ingresos (cobros / ventas)"
-                      value={formatCurrency(selectedPend.ingresos)}
-                      valueClass="text-success"
+                    <EditableRow
+                      label="Caja Inicial"
+                      editing
+                      value={pendForm.cajaInicial}
+                      readValue={0}
+                      onChange={(v) => setPendForm((f) => ({ ...f, cajaInicial: v }))}
                     />
                     <Row
-                      label="Egresos (gastos)"
-                      value={formatCurrency(selectedPend.egresos)}
+                      label="Egresos Totales"
+                      value={formatCurrency(liveEgresosPend)}
                       valueClass="text-destructive"
+                    />
+                    <Row
+                      label="Total Arqueo"
+                      value={formatCurrency(pendCalc?.totalArqueo ?? 0)}
+                      valueClass="font-semibold"
+                    />
+                    <Row
+                      label="Venta Real del Día"
+                      value={formatCurrency(pendCalc?.ventaReal ?? 0)}
+                      valueClass="font-bold text-success text-base"
                     />
                   </div>
 
@@ -827,32 +837,59 @@ function HistorialPage() {
                       </AccordionContent>
                     </AccordionItem>
                   </Accordion>
+
+                  <Accordion type="single" collapsible className="rounded-lg border border-dashed px-3">
+                    <AccordionItem value="add-gasto-omitido" className="border-b-0">
+                      <AccordionTrigger className="text-sm">
+                        <span className="flex-1 text-left text-primary font-medium">
+                          + Añadir Gasto Omitido
+                        </span>
+                      </AccordionTrigger>
+                      <AccordionContent>
+                        <div className="space-y-3 py-2">
+                          <p className="text-xs text-muted-foreground">
+                            Se registrará con la fecha del día revisado ({formatFechaCorta(selectedPend.fecha)}).
+                          </p>
+                          <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] gap-2">
+                            <div>
+                              <Label className="text-xs">Monto</Label>
+                              <Input
+                                type="number"
+                                inputMode="decimal"
+                                step="0.01"
+                                value={gastoOmitido.monto}
+                                onChange={(e) => setGastoOmitido((g) => ({ ...g, monto: e.target.value }))}
+                                placeholder="0.00"
+                                className="h-10"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs">Descripción</Label>
+                              <Input
+                                value={gastoOmitido.descripcion}
+                                onChange={(e) => setGastoOmitido((g) => ({ ...g, descripcion: e.target.value }))}
+                                placeholder="Ej: Compra de hielo"
+                                className="h-10"
+                              />
+                            </div>
+                          </div>
+                          <Button
+                            size="sm"
+                            className="w-full"
+                            onClick={() => addGastoOmitidoMut.mutate()}
+                            disabled={addGastoOmitidoMut.isPending || !gastoOmitido.monto}
+                          >
+                            <Save className="h-4 w-4 mr-2" />
+                            {addGastoOmitidoMut.isPending ? "Guardando..." : "Guardar Gasto"}
+                          </Button>
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
                 </section>
 
                 <section className="space-y-2">
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-                    Caja Inicial
-                  </h3>
-                  <div className="rounded-lg border">
-                    <div className="flex items-center justify-between gap-3 px-4 py-3">
-                      <span className="text-sm text-muted-foreground">Dinero al iniciar el día</span>
-                      <Input
-                        type="number"
-                        inputMode="decimal"
-                        step="0.01"
-                        value={pendForm.cajaInicial}
-                        onChange={(e) => setPendForm((f) => ({ ...f, cajaInicial: e.target.value }))}
-                        placeholder="0.00"
-                        className="h-9 w-32 text-right"
-                      />
-                    </div>
-                  </div>
-                </section>
-
-                <section className="space-y-2">
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-                    Efectivo Físico (Cierre)
-                  </h3>
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Efectivo Físico</h3>
                   <div className="rounded-lg border divide-y">
                     <EditableRow
                       label="Total Billetes"
@@ -877,9 +914,7 @@ function HistorialPage() {
                 </section>
 
                 <section className="space-y-2">
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-                    Bancos
-                  </h3>
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Bancos</h3>
                   <div className="rounded-lg border divide-y">
                     <EditableRow
                       label="Banco Pichincha"
@@ -898,21 +933,6 @@ function HistorialPage() {
                   </div>
                 </section>
 
-                {pendCalc && (
-                  <section className="space-y-2">
-                    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-                      Resumen
-                    </h3>
-                    <div className="rounded-lg border divide-y">
-                      <Row label="Total Arqueo" value={formatCurrency(pendCalc.totalArqueo)} valueClass="font-semibold" />
-                      <Row
-                        label="Venta Real del Día"
-                        value={formatCurrency(pendCalc.ventaReal)}
-                        valueClass="font-bold text-success text-base"
-                      />
-                    </div>
-                  </section>
-                )}
 
                 <div className="flex gap-2 pt-2">
                   <Button
