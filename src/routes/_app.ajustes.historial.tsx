@@ -172,20 +172,26 @@ function HistorialPage() {
 
   const cierres = cierresQ.data ?? [];
 
-  // Construir mapa de actividad por fecha local
+  // Construir mapa de actividad por fecha local.
+  // Solo las transacciones con tipo === 'gasto' marcan el día como pendiente
+  // (los ingresos por abonos/cobros de fiados NO deben generar fila "No Cerrado").
   const actividadPorFecha = useMemo(() => {
-    const map = new Map<string, { ingresos: number; egresos: number }>();
+    const map = new Map<string, { ingresos: number; egresos: number; tieneGasto: boolean }>();
     for (const t of txRangoQ.data ?? []) {
       const f = localDateFromISO(t.created_at as string);
-      const cur = map.get(f) ?? { ingresos: 0, egresos: 0 };
+      const cur = map.get(f) ?? { ingresos: 0, egresos: 0, tieneGasto: false };
       const monto = Number(t.monto) || 0;
-      if (t.tipo === "gasto") cur.egresos += monto;
-      else if (t.tipo === "ingreso") cur.ingresos += monto;
+      if (t.tipo === "gasto") {
+        cur.egresos += monto;
+        cur.tieneGasto = true;
+      } else if (t.tipo === "ingreso") {
+        cur.ingresos += monto;
+      }
       map.set(f, cur);
     }
     for (const a of abonosRangoQ.data ?? []) {
       const f = localDateFromISO(a.created_at as string);
-      const cur = map.get(f) ?? { ingresos: 0, egresos: 0 };
+      const cur = map.get(f) ?? { ingresos: 0, egresos: 0, tieneGasto: false };
       cur.ingresos += Number(a.monto) || 0;
       map.set(f, cur);
     }
@@ -200,6 +206,8 @@ function HistorialPage() {
     for (const [fecha, act] of actividadPorFecha.entries()) {
       if (fecha >= today) continue; // hoy aún se puede cerrar normalmente
       if (fechasCerradas.has(fecha)) continue;
+      // Solo días con al menos un GASTO real activan la fila virtual "No Cerrado".
+      if (!act.tieneGasto) continue;
       items.push({ kind: "pendiente", fecha, ingresos: round2(act.ingresos), egresos: round2(act.egresos) });
     }
     return items;
