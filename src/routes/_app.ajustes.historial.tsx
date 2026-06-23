@@ -425,7 +425,7 @@ function HistorialPage() {
       const billetes = round2(pendForm.billetes);
       const totalArqueo = round2(bancos + billetes + totalMonedas);
       const cajaInicial = round2(pendForm.cajaInicial);
-      const totalEgresos = round2(selectedPend.egresos);
+      const totalEgresos = round2(liveEgresosPend);
       const ventaReal = round2(totalArqueo - (cajaInicial - totalEgresos));
 
       const { error } = await supabase.from("historial_cajas").upsert({
