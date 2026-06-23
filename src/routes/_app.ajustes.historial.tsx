@@ -261,6 +261,7 @@ function HistorialPage() {
       billetes: "",
       monedas: { m100: "", m050: "", m025: "", m010: "", m005: "" },
     });
+    setGastoOmitido({ monto: "", descripcion: "" });
   }, [openPendiente]);
 
   const egresosDiaQ = useQuery({
