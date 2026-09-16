@@ -24,3 +24,14 @@ export function round2(n: number | string | null | undefined): number {
   if (!Number.isFinite(v as number)) return 0;
   return Math.round((v as number) * 100) / 100;
 }
+
+/**
+ * Normaliza la entrada de campos monetarios para teclados iOS/LatAm:
+ * acepta coma o punto como separador decimal y devuelve el string saneado con punto.
+ */
+export function sanitizeDecimal(v: string): string {
+  return v
+    .replace(",", ".")
+    .replace(/[^0-9.]/g, "")
+    .replace(/(\..*)\./g, "$1");
+}
