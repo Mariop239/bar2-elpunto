@@ -26,7 +26,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useEmpleado } from "@/lib/empleado-store";
-import { formatCurrency, cn, round2 } from "@/lib/utils";
+import { formatCurrency, cn, round2, sanitizeDecimal } from "@/lib/utils";
 
 export const Route = createFileRoute("/_app/deudores/$clienteId")({
   component: DetalleDeudor,
@@ -329,7 +329,7 @@ function AbonarDialog({ saldo, onConfirm, disabled }: { saldo: number; onConfirm
         <div className="space-y-3">
           <div>
             <Label>Monto</Label>
-            <Input type="number" step="0.01" inputMode="decimal" value={monto} onChange={(e) => setMonto(e.target.value)} disabled={done} className="h-12 text-lg" />
+            <Input type="text" inputMode="decimal" value={monto} onChange={(e) => setMonto(sanitizeDecimal(e.target.value))} disabled={done} className="h-12 text-lg" />
           </div>
           <div className="grid grid-cols-2 gap-2">
             {(["efectivo","transferencia"] as Metodo[]).map((m) => (

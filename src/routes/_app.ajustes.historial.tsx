@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useState, useEffect, useMemo } from "react";
-import { formatCurrency, round2 } from "@/lib/utils";
+import { formatCurrency, round2, sanitizeDecimal } from "@/lib/utils";
 import { FileSpreadsheet, Eye, Pencil, Save, X, AlertCircle, CheckCircle2 } from "lucide-react";
 import * as XLSX from "xlsx";
 import { useEmpleado } from "@/lib/empleado-store";
@@ -854,11 +854,10 @@ function HistorialPage() {
                             <div>
                               <Label className="text-xs">Monto</Label>
                               <Input
-                                type="number"
+                                type="text"
                                 inputMode="decimal"
-                                step="0.01"
                                 value={gastoOmitido.monto}
-                                onChange={(e) => setGastoOmitido((g) => ({ ...g, monto: e.target.value }))}
+                                onChange={(e) => setGastoOmitido((g) => ({ ...g, monto: sanitizeDecimal(e.target.value) }))}
                                 placeholder="0.00"
                                 className="h-10"
                               />
@@ -989,11 +988,10 @@ function EditableRow({
       <span className="text-sm text-muted-foreground">{label}</span>
       {editing ? (
         <Input
-          type="number"
+          type="text"
           inputMode="decimal"
-          step="0.01"
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => onChange(sanitizeDecimal(e.target.value))}
           placeholder="0.00"
           className="h-9 w-32 text-right"
         />
