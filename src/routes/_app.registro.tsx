@@ -15,7 +15,7 @@ import { FiadosRecientes } from "@/components/fiados-recientes";
 import { toast } from "sonner";
 import { useEmpleado } from "@/lib/empleado-store";
 import { useLocalStorage } from "@/hooks/use-local-storage";
-import { formatCurrency, cn, round2 } from "@/lib/utils";
+import { formatCurrency, cn, round2, sanitizeDecimal } from "@/lib/utils";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { Calendar } from "@/components/ui/calendar";
@@ -369,10 +369,9 @@ function CajaTab() {
             <Input
               id="caja-inicial"
               inputMode="decimal"
-              type="number"
-              step="0.01"
+              type="text"
               value={cajaInicial}
-              onChange={(e) => guardarCajaInicial(e.target.value)}
+              onChange={(e) => guardarCajaInicial(sanitizeDecimal(e.target.value))}
               placeholder="0.00"
               className="h-14 pl-8 text-2xl font-bold"
             />
@@ -413,11 +412,10 @@ function CajaTab() {
             <div>
               <Label className="text-xs">Monto</Label>
               <Input
-                type="number"
+                type="text"
                 inputMode="decimal"
-                step="0.01"
                 value={egMonto}
-                onChange={(e) => setEgMonto(e.target.value)}
+                onChange={(e) => setEgMonto(sanitizeDecimal(e.target.value))}
                 placeholder="0.00"
                 className="h-12 mt-1 text-lg"
               />
@@ -498,14 +496,14 @@ function CajaTab() {
                   <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-yellow-400 text-yellow-950 font-extrabold text-xs">BP</span>
                   <Label className="text-sm font-bold">Banco Pichincha</Label>
                 </div>
-                <Input type="number" inputMode="decimal" step="0.01" value={bancoPichincha} onChange={(e) => setBancoPichincha(e.target.value)} placeholder="0.00" className="h-12 text-lg bg-background" />
+                <Input type="text" inputMode="decimal" value={bancoPichincha} onChange={(e) => setBancoPichincha(sanitizeDecimal(e.target.value))} placeholder="0.00" className="h-12 text-lg bg-background" />
               </div>
               <div className="rounded-lg border-2 border-blue-500 bg-blue-50 dark:bg-blue-950/30 p-3">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-blue-600 text-white font-extrabold text-xs">BG</span>
                   <Label className="text-sm font-bold">Banco Guayaquil</Label>
                 </div>
-                <Input type="number" inputMode="decimal" step="0.01" value={bancoGuayaquil} onChange={(e) => setBancoGuayaquil(e.target.value)} placeholder="0.00" className="h-12 text-lg bg-background" />
+                <Input type="text" inputMode="decimal" value={bancoGuayaquil} onChange={(e) => setBancoGuayaquil(sanitizeDecimal(e.target.value))} placeholder="0.00" className="h-12 text-lg bg-background" />
               </div>
             </div>
             <div className="flex justify-between mt-2 text-sm">
@@ -518,7 +516,7 @@ function CajaTab() {
 
           <div>
             <Label className="text-xs">Billetes (efectivo)</Label>
-            <Input type="number" inputMode="decimal" step="0.01" value={billetes} onChange={(e) => setBilletes(e.target.value)} placeholder="0.00" className="h-12 mt-1 text-lg max-w-sm" />
+            <Input type="text" inputMode="decimal" value={billetes} onChange={(e) => setBilletes(sanitizeDecimal(e.target.value))} placeholder="0.00" className="h-12 mt-1 text-lg max-w-sm" />
           </div>
 
           <Separator />
@@ -538,9 +536,9 @@ function CajaTab() {
                       </span>
                     </div>
                     <Input
-                      type="number" inputMode="decimal" min="0" step="0.01"
+                      type="text" inputMode="decimal"
                       value={monedas[d.key]}
-                      onChange={(e) => setMonedas((m) => ({ ...m, [d.key]: e.target.value }))}
+                      onChange={(e) => setMonedas((m) => ({ ...m, [d.key]: sanitizeDecimal(e.target.value) }))}
                       placeholder="0.00"
                       className="h-11 text-base text-center"
                     />

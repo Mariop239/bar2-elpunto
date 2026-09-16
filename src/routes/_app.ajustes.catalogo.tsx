@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useState } from "react";
 import { toast } from "sonner";
-import { formatCurrency, round2 } from "@/lib/utils";
+import { formatCurrency, round2, sanitizeDecimal } from "@/lib/utils";
 import { Pencil, Trash2, Search, X } from "lucide-react";
 
 export const Route = createFileRoute("/_app/ajustes/catalogo")({
@@ -119,7 +119,7 @@ function CatalogoPage() {
         </div>
         <div>
           <Label>Precio</Label>
-          <Input type="number" step="0.01" value={precio} onChange={(e) => setPrecio(e.target.value)} className="h-12" />
+          <Input type="text" inputMode="decimal" value={precio} onChange={(e) => setPrecio(sanitizeDecimal(e.target.value))} className="h-12" />
         </div>
         <div>
           <Label>Categoría</Label>
@@ -221,10 +221,10 @@ function CatalogoPage() {
               <div>
                 <Label>Precio</Label>
                 <Input
-                  type="number"
-                  step="0.01"
+                  type="text"
+                  inputMode="decimal"
                   value={editing.precio}
-                  onChange={(e) => setEditing({ ...editing, precio: e.target.value })}
+                  onChange={(e) => setEditing({ ...editing, precio: sanitizeDecimal(e.target.value) })}
                   className="h-11"
                 />
               </div>
