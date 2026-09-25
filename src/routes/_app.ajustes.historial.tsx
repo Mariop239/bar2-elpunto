@@ -94,11 +94,13 @@ function HistorialPage() {
   const [openPendiente, setOpenPendiente] = useState<string | null>(null);
   const [editMode, setEditMode] = useState(false);
   const [form, setForm] = useState<{
+    cajaInicial: string;
     bancoPichincha: string;
     bancoGuayaquil: string;
     billetes: string;
     monedas: Record<DenomKey, string>;
   }>({
+    cajaInicial: "",
     bancoPichincha: "",
     bancoGuayaquil: "",
     billetes: "",
@@ -237,6 +239,7 @@ function HistorialPage() {
     if (!selected) return;
     const m = selected.monedas || {};
     setForm({
+      cajaInicial: String(selected.caja_inicial ?? ""),
       bancoPichincha: String(m.banco_pichincha ?? ""),
       bancoGuayaquil: String(m.banco_guayaquil ?? ""),
       billetes: String(selected.billetes ?? ""),
@@ -345,11 +348,13 @@ function HistorialPage() {
       const bancos = round2((monedasObj.banco_pichincha ?? 0) + (monedasObj.banco_guayaquil ?? 0));
       const billetes = round2(form.billetes);
       const totalArqueo = round2(bancos + billetes + totalMonedas);
-      const ventaReal = round2(totalArqueo - (Number(selected.caja_inicial) - Number(selected.total_egresos)));
+      const cajaInicial = round2(form.cajaInicial);
+      const ventaReal = round2(totalArqueo - (cajaInicial - Number(selected.total_egresos)));
 
       const { error } = await supabase
         .from("historial_cajas")
         .update({
+          caja_inicial: cajaInicial,
           billetes,
           bancos,
           monedas: monedasObj,
@@ -378,7 +383,7 @@ function HistorialPage() {
     const bancos = (Number(form.bancoPichincha) || 0) + (Number(form.bancoGuayaquil) || 0);
     const billetes = Number(form.billetes) || 0;
     const totalArqueo = bancos + billetes + totalMonedas;
-    const ventaReal = totalArqueo - (Number(selected.caja_inicial) - Number(selected.total_egresos));
+    const ventaReal = totalArqueo - ((Number(form.cajaInicial) || 0) - Number(selected.total_egresos));
     return { totalMonedas, bancos, billetes, totalArqueo, ventaReal };
   }, [form, selected]);
 
@@ -630,7 +635,13 @@ function HistorialPage() {
                 <section className="space-y-2">
                   <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Totales</h3>
                   <div className="rounded-lg border divide-y">
-                    <Row label="Caja Inicial" value={formatCurrency(Number(selected.caja_inicial))} />
+                    <EditableRow
+                      label="Caja Inicial"
+                      editing={editMode}
+                      value={form.cajaInicial}
+                      readValue={Number(selected.caja_inicial)}
+                      onChange={(v) => setForm((f) => ({ ...f, cajaInicial: v }))}
+                    />
                     <Row label="Egresos Totales" value={formatCurrency(Number(selected.total_egresos))} valueClass="text-destructive" />
                     <Row
                       label="Total Arqueo"
