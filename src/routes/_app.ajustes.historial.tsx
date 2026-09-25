@@ -372,6 +372,7 @@ function HistorialPage() {
       qc.invalidateQueries({ queryKey: ["arqueos-rango"] });
       qc.invalidateQueries({ queryKey: ["ultimo-cierre"] });
       qc.invalidateQueries({ queryKey: ["arqueo-hoy"] });
+      qc.invalidateQueries({ queryKey: ["caja-inicial-hoy"] });
     },
     onError: (err: any) => toast.error("Error al guardar", { description: err.message }),
   });
