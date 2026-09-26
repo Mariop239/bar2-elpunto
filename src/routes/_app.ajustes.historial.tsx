@@ -285,6 +285,23 @@ function HistorialPage() {
     },
   });
 
+  // Fiados entregados el día del cierre seleccionado (para Producción Total)
+  const fiadosDiaQ = useQuery({
+    queryKey: ["fiados-dia-detalle", selected?.fecha],
+    enabled: !!selected?.fecha,
+    queryFn: async () => {
+      const start = new Date(`${selected!.fecha}T00:00:00`).toISOString();
+      const end = new Date(`${selected!.fecha}T23:59:59.999`).toISOString();
+      const { data, error } = await supabase
+        .from("deudas")
+        .select("monto")
+        .gte("created_at", start)
+        .lte("created_at", end);
+      if (error) throw error;
+      return round2((data ?? []).reduce((acc, d) => acc + Number(d.monto), 0));
+    },
+  });
+
   // Detalle de gastos del día pendiente seleccionado
   const egresosPendDiaQ = useQuery({
     queryKey: ["egresos-dia-detalle", selectedPend?.fecha],
@@ -654,6 +671,39 @@ function HistorialPage() {
                       value={formatCurrency(editMode && liveCalc ? liveCalc.ventaReal : Number(selected.venta_real))}
                       valueClass="font-bold text-success text-base"
                     />
+                  </div>
+
+                  {/* Producción Total del Día: Venta Real + Fiados entregados ese día */}
+                  <div className="rounded-lg border bg-primary/5 border-primary/20 p-3 space-y-1.5">
+                    <p className="text-sm font-semibold text-primary">Producción Total del Día</p>
+                    <p className="text-[11px] text-muted-foreground">Salida real de inventario (Venta limpia + Créditos)</p>
+                    <div className="pt-1 space-y-1 text-sm">
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">Venta Real en Efectivo/Bancos</span>
+                        <span className="font-medium">
+                          {formatCurrency(editMode && liveCalc ? liveCalc.ventaReal : Number(selected.venta_real))}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">(+) Fiados entregados este día</span>
+                        <span className="font-medium text-orange-600 dark:text-orange-400">
+                          {fiadosDiaQ.isLoading ? "—" : formatCurrency(fiadosDiaQ.data ?? 0)}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between border-t pt-1.5">
+                        <span className="font-semibold">(=) Producción Total (Inventario)</span>
+                        <span className="font-bold text-primary text-base">
+                          {fiadosDiaQ.isLoading
+                            ? "—"
+                            : formatCurrency(
+                                round2(
+                                  (editMode && liveCalc ? liveCalc.ventaReal : Number(selected.venta_real)) +
+                                    (fiadosDiaQ.data ?? 0)
+                                )
+                              )}
+                        </span>
+                      </div>
+                    </div>
                   </div>
 
                   <Accordion type="single" collapsible className="rounded-lg border px-3">
