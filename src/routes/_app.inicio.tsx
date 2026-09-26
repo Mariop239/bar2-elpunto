@@ -98,6 +98,25 @@ function Dashboard() {
     refetchOnWindowFocus: true,
   });
 
+  // Total Fiado del Día: deudas creadas hoy con estado pendiente (no cobradas).
+  // Solo lectura/suma — no altera la fórmula de arqueo ni la Venta Real.
+  const fiadoHoyQ = useQuery({
+    queryKey: ["fiado-hoy", todayDate()],
+    queryFn: async () => {
+      const { ini, fin } = localDayRange();
+      const { data: fiados, error } = await supabase
+        .from("deudas")
+        .select("monto")
+        .eq("estado", "pendiente")
+        .gte("created_at", ini)
+        .lte("created_at", fin);
+      if (error) throw error;
+      const total = (fiados ?? []).reduce((acc, d) => acc + Number(d.monto), 0);
+      return round2(total);
+    },
+    refetchOnWindowFocus: true,
+  });
+
   // Caja inicial = valor ingresado hoy en /registro (localStorage),
   // o el total_arqueo del último cierre anterior a hoy como fallback.
   const cajaInicialQ = useQuery({
