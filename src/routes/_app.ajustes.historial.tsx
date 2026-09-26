@@ -235,6 +235,16 @@ function HistorialPage() {
     return map;
   }, [txRangoQ.data, abonosRangoQ.data]);
 
+  // Total de fiados entregados por día (fecha local) — para Producción Total
+  const fiadosPorFecha = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const d of deudasRangoQ.data ?? []) {
+      const f = localDateFromISO(d.created_at as string);
+      map.set(f, round2((map.get(f) ?? 0) + Number(d.monto)));
+    }
+    return map;
+  }, [deudasRangoQ.data]);
+
   const today = todayISO();
   const fechasCerradas = useMemo(() => new Set(cierres.map((c) => c.fecha)), [cierres]);
 
