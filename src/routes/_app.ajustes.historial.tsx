@@ -1062,11 +1062,33 @@ function HistorialPage() {
   );
 }
 
-function Row({ label, value, valueClass = "" }: { label: string; value: string; valueClass?: string }) {
+function Bloque({ title, icon: Icon, children }: { title: string; icon?: LucideIcon; children: ReactNode }) {
   return (
-    <div className="flex items-center justify-between px-4 py-3">
+    <section className="rounded-xl border bg-muted/30 p-4 space-y-3">
+      <div className="flex items-center gap-2">
+        {Icon ? <Icon className="h-4 w-4 text-muted-foreground" /> : null}
+        <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function Linea({
+  label,
+  value,
+  valueClass = "",
+  large = false,
+}: {
+  label: string;
+  value: ReactNode;
+  valueClass?: string;
+  large?: boolean;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3 px-1 py-2.5">
       <span className="text-sm text-muted-foreground">{label}</span>
-      <span className={`text-sm ${valueClass}`}>{value}</span>
+      <span className={`${large ? "text-lg" : "text-sm"} font-medium ${valueClass}`}>{value}</span>
     </div>
   );
 }
@@ -1077,15 +1099,17 @@ function EditableRow({
   value,
   readValue,
   onChange,
+  large = false,
 }: {
   label: string;
   editing: boolean;
   value: string;
   readValue: number;
   onChange: (v: string) => void;
+  large?: boolean;
 }) {
   return (
-    <div className="flex items-center justify-between gap-3 px-4 py-3">
+    <div className="flex items-center justify-between gap-3 px-1 py-2.5">
       <span className="text-sm text-muted-foreground">{label}</span>
       {editing ? (
         <Input
@@ -1097,7 +1121,7 @@ function EditableRow({
           className="h-9 w-32 text-right"
         />
       ) : (
-        <span className="text-sm font-medium">{formatCurrency(readValue)}</span>
+        <span className={`${large ? "text-lg" : "text-sm"} font-medium`}>{formatCurrency(readValue)}</span>
       )}
     </div>
   );
