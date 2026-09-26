@@ -16,7 +16,6 @@ import {
   Save,
   X,
   AlertCircle,
-  CheckCircle2,
   Calculator,
   Banknote,
   Coins,
@@ -191,6 +190,22 @@ function HistorialPage() {
     },
   });
 
+  // Deudas (fiados) del rango — para la columna Producción Total de la tabla
+  const deudasRangoQ = useQuery({
+    queryKey: ["deudas-rango", desde, hasta],
+    queryFn: async () => {
+      const start = new Date(`${desde}T00:00:00`).toISOString();
+      const end = new Date(`${hasta}T23:59:59.999`).toISOString();
+      const { data, error } = await supabase
+        .from("deudas")
+        .select("id, monto, created_at")
+        .gte("created_at", start)
+        .lte("created_at", end);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
   const cierres = cierresQ.data ?? [];
 
   // Construir mapa de actividad por fecha local.
@@ -218,6 +233,16 @@ function HistorialPage() {
     }
     return map;
   }, [txRangoQ.data, abonosRangoQ.data]);
+
+  // Total de fiados entregados por día (fecha local) — para Producción Total
+  const fiadosPorFecha = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const d of deudasRangoQ.data ?? []) {
+      const f = localDateFromISO(d.created_at as string);
+      map.set(f, round2((map.get(f) ?? 0) + Number(d.monto)));
+    }
+    return map;
+  }, [deudasRangoQ.data]);
 
   const today = todayISO();
   const fechasCerradas = useMemo(() => new Set(cierres.map((c) => c.fecha)), [cierres]);
@@ -576,9 +601,11 @@ function HistorialPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Fecha</TableHead>
-                <TableHead>Estado</TableHead>
+                <TableHead className="text-right">Caja Inicial</TableHead>
+                <TableHead className="text-right">Egresos</TableHead>
                 <TableHead className="text-right">Total Arqueo</TableHead>
                 <TableHead className="text-right">Venta Real</TableHead>
+                <TableHead className="text-right">Producción Total</TableHead>
                 <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
             </TableHeader>
@@ -586,17 +613,16 @@ function HistorialPage() {
               {filas.map((row) => {
                 if (row.kind === "cerrado") {
                   const c = row.cierre;
+                  const fiados = fiadosPorFecha.get(c.fecha) ?? 0;
+                  const produccion = round2(Number(c.venta_real) + fiados);
                   return (
                     <TableRow key={c.id}>
                       <TableCell className="font-medium">{formatFechaCorta(c.fecha)}</TableCell>
-                      <TableCell>
-                        <Badge variant="secondary" className="gap-1">
-                          <CheckCircle2 className="h-3 w-3" />
-                          Cerrado
-                        </Badge>
-                      </TableCell>
+                      <TableCell className="text-right">{formatCurrency(Number(c.caja_inicial))}</TableCell>
+                      <TableCell className="text-right text-destructive">{formatCurrency(Number(c.total_egresos))}</TableCell>
                       <TableCell className="text-right">{formatCurrency(Number(c.total_arqueo))}</TableCell>
                       <TableCell className="text-right font-semibold text-success">{formatCurrency(Number(c.venta_real))}</TableCell>
+                      <TableCell className="text-right font-bold text-primary">{formatCurrency(produccion)}</TableCell>
                       <TableCell className="text-right">
                         <Button size="sm" variant="outline" onClick={() => setOpenId(c.id)}>
                           <Eye className="h-4 w-4 mr-1" />
@@ -613,14 +639,11 @@ function HistorialPage() {
                     onClick={() => setOpenPendiente(row.fecha)}
                   >
                     <TableCell className="font-medium">{formatFechaCorta(row.fecha)}</TableCell>
-                    <TableCell>
-                      <Badge variant="destructive" className="gap-1">
-                        <AlertCircle className="h-3 w-3" />
-                        No Cerrado
-                      </Badge>
-                    </TableCell>
+                    <TableCell className="text-right text-muted-foreground">—</TableCell>
+                    <TableCell className="text-right text-destructive">{formatCurrency(row.egresos)}</TableCell>
                     <TableCell className="text-right text-muted-foreground">—</TableCell>
                     <TableCell className="text-right text-muted-foreground italic">Pendiente</TableCell>
+                    <TableCell className="text-right text-muted-foreground">—</TableCell>
                     <TableCell className="text-right">
                       <Button
                         size="sm"
@@ -637,7 +660,7 @@ function HistorialPage() {
               })}
               {filas.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
                     Sin cierres ni actividad en el rango seleccionado
                   </TableCell>
                 </TableRow>
