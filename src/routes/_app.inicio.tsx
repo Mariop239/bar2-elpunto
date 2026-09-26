@@ -176,7 +176,7 @@ function Dashboard() {
       </div>
 
       {/* Cards principales alineadas con el cierre de caja */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Card className="p-4 bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900/50 rounded-xl shadow-sm">
           <Coins className="h-6 w-6 text-amber-600 dark:text-amber-400" />
           <p className="mt-2 text-xs text-muted-foreground">Caja Inicial</p>
