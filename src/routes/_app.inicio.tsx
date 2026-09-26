@@ -6,8 +6,8 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
-import { formatCurrency } from "@/lib/utils";
-import { Banknote, Receipt, PlusCircle, Wallet, Clock, ArrowRight, Coins, AlertCircle } from "lucide-react";
+import { formatCurrency, round2 } from "@/lib/utils";
+import { Banknote, Receipt, PlusCircle, Wallet, Clock, ArrowRight, Coins, AlertCircle, CreditCard, TrendingUp } from "lucide-react";
 import { PageTransition } from "@/components/page-transition";
 import { useEmpleado } from "@/lib/empleado-store";
 import { FiadosRecientes } from "@/components/fiados-recientes";
@@ -46,6 +46,7 @@ function Dashboard() {
       })
       .on("postgres_changes", { event: "*", schema: "public", table: "deudas" }, () => {
         qc.invalidateQueries({ queryKey: ["fiados-recientes"] });
+        qc.invalidateQueries({ queryKey: ["fiado-hoy"] });
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
@@ -97,6 +98,25 @@ function Dashboard() {
     refetchOnWindowFocus: true,
   });
 
+  // Total Fiado del Día: deudas creadas hoy con estado pendiente (no cobradas).
+  // Solo lectura/suma — no altera la fórmula de arqueo ni la Venta Real.
+  const fiadoHoyQ = useQuery({
+    queryKey: ["fiado-hoy", todayDate()],
+    queryFn: async () => {
+      const { ini, fin } = localDayRange();
+      const { data: fiados, error } = await supabase
+        .from("deudas")
+        .select("monto")
+        .eq("estado", "pendiente")
+        .gte("created_at", ini)
+        .lte("created_at", fin);
+      if (error) throw error;
+      const total = (fiados ?? []).reduce((acc, d) => acc + Number(d.monto), 0);
+      return round2(total);
+    },
+    refetchOnWindowFocus: true,
+  });
+
   // Caja inicial = valor ingresado hoy en /registro (localStorage),
   // o el total_arqueo del último cierre anterior a hoy como fallback.
   const cajaInicialQ = useQuery({
@@ -136,6 +156,10 @@ function Dashboard() {
     ? Number(arqueo.data!.caja_inicial)
     : (cajaInicialQ.data ?? 0);
 
+  // Fiado Hoy y Producción Total (efectivo + fiado).
+  const fiadoHoy = fiadoHoyQ.data ?? 0;
+  const produccionTotal = hasArqueo ? round2((ventaReal ?? 0) + fiadoHoy) : null;
+
   return (
     <PageTransition>
     <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-5">
@@ -152,7 +176,7 @@ function Dashboard() {
       </div>
 
       {/* Cards principales alineadas con el cierre de caja */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Card className="p-4 bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900/50 rounded-xl shadow-sm">
           <Coins className="h-6 w-6 text-amber-600 dark:text-amber-400" />
           <p className="mt-2 text-xs text-muted-foreground">Caja Inicial</p>
@@ -187,7 +211,36 @@ function Dashboard() {
             <p className="text-sm font-medium text-muted-foreground italic">Pendiente de arqueo</p>
           </Card>
         )}
+
+        {/* Fiado Hoy: deudas pendientes creadas el día actual */}
+        <Card className="p-4 bg-orange-50 dark:bg-orange-950/30 border-orange-200 dark:border-orange-900/50 rounded-xl shadow-sm">
+          <CreditCard className="h-6 w-6 text-orange-600 dark:text-orange-400" />
+          <p className="mt-2 text-xs text-muted-foreground">Fiado Hoy</p>
+          <p className="text-2xl font-bold text-orange-700 dark:text-orange-300">
+            {fiadoHoyQ.isLoading ? "—" : formatCurrency(fiadoHoy)}
+          </p>
+          <p className="text-[11px] text-orange-600/80 dark:text-orange-400/80 mt-0.5">Pendiente de cobro</p>
+        </Card>
       </div>
+
+      {/* Producción Total: Venta Real (efectivo) + Fiado Hoy */}
+      <Card className="p-4 bg-primary/5 border-primary/20 rounded-xl shadow-sm">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <TrendingUp className="h-5 w-5 text-primary" />
+            <p className="text-sm font-semibold text-primary">Producción Total del Día</p>
+          </div>
+          <p className="text-[11px] text-muted-foreground">Efectivo + Fiado</p>
+        </div>
+        {produccionTotal !== null ? (
+          <p className="mt-2 text-3xl font-extrabold text-primary tracking-tight">{formatCurrency(produccionTotal)}</p>
+        ) : (
+          <>
+            <p className="mt-2 text-2xl font-bold text-muted-foreground">{formatCurrency(fiadoHoy)}</p>
+            <p className="text-[11px] text-muted-foreground italic">Pendiente de arqueo para total completo</p>
+          </>
+        )}
+      </Card>
 
       <div className="grid grid-cols-2 gap-3">
         <Button asChild size="lg" className="h-16 text-base">
