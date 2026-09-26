@@ -285,6 +285,23 @@ function HistorialPage() {
     },
   });
 
+  // Fiados entregados el día del cierre seleccionado (para Producción Total)
+  const fiadosDiaQ = useQuery({
+    queryKey: ["fiados-dia-detalle", selected?.fecha],
+    enabled: !!selected?.fecha,
+    queryFn: async () => {
+      const start = new Date(`${selected!.fecha}T00:00:00`).toISOString();
+      const end = new Date(`${selected!.fecha}T23:59:59.999`).toISOString();
+      const { data, error } = await supabase
+        .from("deudas")
+        .select("monto")
+        .gte("created_at", start)
+        .lte("created_at", end);
+      if (error) throw error;
+      return round2((data ?? []).reduce((acc, d) => acc + Number(d.monto), 0));
+    },
+  });
+
   // Detalle de gastos del día pendiente seleccionado
   const egresosPendDiaQ = useQuery({
     queryKey: ["egresos-dia-detalle", selectedPend?.fecha],

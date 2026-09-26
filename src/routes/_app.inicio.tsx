@@ -230,7 +230,7 @@ function Dashboard() {
             <TrendingUp className="h-5 w-5 text-primary" />
             <p className="text-sm font-semibold text-primary">Producción Total del Día</p>
           </div>
-          <p className="text-[11px] text-muted-foreground">Efectivo + Fiado</p>
+          <p className="text-[11px] text-muted-foreground">Comida total despachada hoy (Venta limpia + Créditos)</p>
         </div>
         {produccionTotal !== null ? (
           <p className="mt-2 text-3xl font-extrabold text-primary tracking-tight">{formatCurrency(produccionTotal)}</p>
