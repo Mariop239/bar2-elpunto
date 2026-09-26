@@ -577,8 +577,6 @@ function HistorialPage() {
               <TableRow>
                 <TableHead>Fecha</TableHead>
                 <TableHead>Estado</TableHead>
-                <TableHead className="text-right">Caja Inicial</TableHead>
-                <TableHead className="text-right">Egresos</TableHead>
                 <TableHead className="text-right">Total Arqueo</TableHead>
                 <TableHead className="text-right">Venta Real</TableHead>
                 <TableHead className="text-right">Acciones</TableHead>
@@ -597,8 +595,6 @@ function HistorialPage() {
                           Cerrado
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-right">{formatCurrency(Number(c.caja_inicial))}</TableCell>
-                      <TableCell className="text-right text-destructive">{formatCurrency(Number(c.total_egresos))}</TableCell>
                       <TableCell className="text-right">{formatCurrency(Number(c.total_arqueo))}</TableCell>
                       <TableCell className="text-right font-semibold text-success">{formatCurrency(Number(c.venta_real))}</TableCell>
                       <TableCell className="text-right">
@@ -624,8 +620,6 @@ function HistorialPage() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right text-muted-foreground">—</TableCell>
-                    <TableCell className="text-right text-destructive">{formatCurrency(row.egresos)}</TableCell>
-                    <TableCell className="text-right text-muted-foreground">—</TableCell>
                     <TableCell className="text-right text-muted-foreground italic">Pendiente</TableCell>
                     <TableCell className="text-right">
                       <Button
@@ -643,7 +637,7 @@ function HistorialPage() {
               })}
               {filas.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
                     Sin cierres ni actividad en el rango seleccionado
                   </TableCell>
                 </TableRow>
