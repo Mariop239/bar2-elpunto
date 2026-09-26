@@ -602,9 +602,11 @@ function HistorialPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Fecha</TableHead>
-                <TableHead>Estado</TableHead>
+                <TableHead className="text-right">Caja Inicial</TableHead>
+                <TableHead className="text-right">Egresos</TableHead>
                 <TableHead className="text-right">Total Arqueo</TableHead>
                 <TableHead className="text-right">Venta Real</TableHead>
+                <TableHead className="text-right">Producción Total</TableHead>
                 <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
             </TableHeader>
@@ -612,17 +614,16 @@ function HistorialPage() {
               {filas.map((row) => {
                 if (row.kind === "cerrado") {
                   const c = row.cierre;
+                  const fiados = fiadosPorFecha.get(c.fecha) ?? 0;
+                  const produccion = round2(Number(c.venta_real) + fiados);
                   return (
                     <TableRow key={c.id}>
                       <TableCell className="font-medium">{formatFechaCorta(c.fecha)}</TableCell>
-                      <TableCell>
-                        <Badge variant="secondary" className="gap-1">
-                          <CheckCircle2 className="h-3 w-3" />
-                          Cerrado
-                        </Badge>
-                      </TableCell>
+                      <TableCell className="text-right">{formatCurrency(Number(c.caja_inicial))}</TableCell>
+                      <TableCell className="text-right text-destructive">{formatCurrency(Number(c.total_egresos))}</TableCell>
                       <TableCell className="text-right">{formatCurrency(Number(c.total_arqueo))}</TableCell>
                       <TableCell className="text-right font-semibold text-success">{formatCurrency(Number(c.venta_real))}</TableCell>
+                      <TableCell className="text-right font-bold text-primary">{formatCurrency(produccion)}</TableCell>
                       <TableCell className="text-right">
                         <Button size="sm" variant="outline" onClick={() => setOpenId(c.id)}>
                           <Eye className="h-4 w-4 mr-1" />
@@ -639,14 +640,11 @@ function HistorialPage() {
                     onClick={() => setOpenPendiente(row.fecha)}
                   >
                     <TableCell className="font-medium">{formatFechaCorta(row.fecha)}</TableCell>
-                    <TableCell>
-                      <Badge variant="destructive" className="gap-1">
-                        <AlertCircle className="h-3 w-3" />
-                        No Cerrado
-                      </Badge>
-                    </TableCell>
+                    <TableCell className="text-right text-muted-foreground">—</TableCell>
+                    <TableCell className="text-right text-destructive">{formatCurrency(row.egresos)}</TableCell>
                     <TableCell className="text-right text-muted-foreground">—</TableCell>
                     <TableCell className="text-right text-muted-foreground italic">Pendiente</TableCell>
+                    <TableCell className="text-right text-muted-foreground">—</TableCell>
                     <TableCell className="text-right">
                       <Button
                         size="sm"
@@ -663,7 +661,7 @@ function HistorialPage() {
               })}
               {filas.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
                     Sin cierres ni actividad en el rango seleccionado
                   </TableCell>
                 </TableRow>
