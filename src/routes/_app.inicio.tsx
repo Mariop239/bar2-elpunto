@@ -46,6 +46,7 @@ function Dashboard() {
       })
       .on("postgres_changes", { event: "*", schema: "public", table: "deudas" }, () => {
         qc.invalidateQueries({ queryKey: ["fiados-recientes"] });
+        qc.invalidateQueries({ queryKey: ["fiado-hoy"] });
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
