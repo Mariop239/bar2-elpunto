@@ -16,7 +16,6 @@ import {
   Save,
   X,
   AlertCircle,
-  CheckCircle2,
   Calculator,
   Banknote,
   Coins,
