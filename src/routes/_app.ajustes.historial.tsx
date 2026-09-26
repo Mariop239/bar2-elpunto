@@ -656,10 +656,10 @@ function HistorialPage() {
                 <SheetDescription>{formatFechaCorta(selected.fecha)}</SheetDescription>
               </SheetHeader>
 
-              <div className="mt-6 space-y-6">
-                <section className="space-y-2">
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Totales</h3>
-                  <div className="rounded-lg border divide-y">
+              <div className="mt-6 space-y-4">
+                {/* ===== Bloque 1 - Resumen Contable ===== */}
+                <Bloque title="Resumen Contable" icon={Calculator}>
+                  <div className="divide-y">
                     <EditableRow
                       label="Caja Inicial"
                       editing={editMode}
@@ -667,21 +667,28 @@ function HistorialPage() {
                       readValue={Number(selected.caja_inicial)}
                       onChange={(v) => setForm((f) => ({ ...f, cajaInicial: v }))}
                     />
-                    <Row label="Egresos Totales" value={formatCurrency(Number(selected.total_egresos))} valueClass="text-destructive" />
-                    <Row
+                    <Linea
+                      label="Egresos Totales"
+                      value={formatCurrency(Number(selected.total_egresos))}
+                      valueClass="text-destructive"
+                    />
+                    <Linea
                       label="Total Arqueo"
                       value={formatCurrency(editMode && liveCalc ? liveCalc.totalArqueo : Number(selected.total_arqueo))}
                       valueClass="font-semibold"
                     />
-                    <Row
+                    <Linea
+                      large
                       label="Venta Real del Día"
                       value={formatCurrency(editMode && liveCalc ? liveCalc.ventaReal : Number(selected.venta_real))}
-                      valueClass="font-bold text-success text-base"
+                      valueClass="font-bold text-success"
                     />
                   </div>
 
+                  <Separator />
+
                   {/* Producción Total del Día: Venta Real + Fiados entregados ese día */}
-                  <div className="rounded-lg border bg-primary/5 border-primary/20 p-3 space-y-1.5">
+                  <div className="rounded-lg bg-primary/5 border border-primary/20 p-3 space-y-1.5">
                     <p className="text-sm font-semibold text-primary">Producción Total del Día</p>
                     <p className="text-[11px] text-muted-foreground">Salida real de inventario (Venta limpia + Créditos)</p>
                     <div className="pt-1 space-y-1 text-sm">
@@ -747,18 +754,23 @@ function HistorialPage() {
                       </AccordionContent>
                     </AccordionItem>
                   </Accordion>
-                </section>
+                </Bloque>
 
-                <section className="space-y-2">
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Efectivo Físico</h3>
-                  <div className="rounded-lg border divide-y">
+                {/* ===== Bloque 2 - Desglose Físico (Efectivo) ===== */}
+                <Bloque title="Desglose Físico (Efectivo)" icon={Coins}>
+                  <div className="divide-y">
                     <EditableRow
+                      large
                       label="Total Billetes"
                       editing={editMode}
                       value={form.billetes}
                       readValue={Number(selected.billetes)}
                       onChange={(v) => setForm((f) => ({ ...f, billetes: v }))}
                     />
+                  </div>
+                  <Separator />
+                  <p className="text-xs font-medium text-muted-foreground">Denominaciones de monedas</p>
+                  <div className="divide-y">
                     {DENOMS.map((d) => (
                       <EditableRow
                         key={d.key}
@@ -770,11 +782,11 @@ function HistorialPage() {
                       />
                     ))}
                   </div>
-                </section>
+                </Bloque>
 
-                <section className="space-y-2">
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Bancos</h3>
-                  <div className="rounded-lg border divide-y">
+                {/* ===== Bloque 3 - Desglose Digital (Bancos) ===== */}
+                <Bloque title="Desglose Digital (Bancos)" icon={Banknote}>
+                  <div className="divide-y">
                     <EditableRow
                       label="Banco Pichincha"
                       editing={editMode}
@@ -790,10 +802,17 @@ function HistorialPage() {
                       onChange={(v) => setForm((f) => ({ ...f, bancoGuayaquil: v }))}
                     />
                   </div>
-                </section>
+                  <Separator />
+                  <Linea
+                    large
+                    label="Total Bancos"
+                    value={formatCurrency(editMode && liveCalc ? liveCalc.bancos : Number(selected.bancos))}
+                    valueClass="font-bold text-primary"
+                  />
+                </Bloque>
 
                 {isAdmin && (
-                  <div className="flex gap-2 pt-2">
+                  <div className="flex gap-2 pt-1">
                     {!editMode ? (
                       <Button className="w-full" onClick={() => setEditMode(true)}>
                         <Pencil className="h-4 w-4 mr-2" />
