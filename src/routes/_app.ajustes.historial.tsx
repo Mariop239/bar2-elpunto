@@ -673,6 +673,39 @@ function HistorialPage() {
                     />
                   </div>
 
+                  {/* Producción Total del Día: Venta Real + Fiados entregados ese día */}
+                  <div className="rounded-lg border bg-primary/5 border-primary/20 p-3 space-y-1.5">
+                    <p className="text-sm font-semibold text-primary">Producción Total del Día</p>
+                    <p className="text-[11px] text-muted-foreground">Salida real de inventario (Venta limpia + Créditos)</p>
+                    <div className="pt-1 space-y-1 text-sm">
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">Venta Real en Efectivo/Bancos</span>
+                        <span className="font-medium">
+                          {formatCurrency(editMode && liveCalc ? liveCalc.ventaReal : Number(selected.venta_real))}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">(+) Fiados entregados este día</span>
+                        <span className="font-medium text-orange-600 dark:text-orange-400">
+                          {fiadosDiaQ.isLoading ? "—" : formatCurrency(fiadosDiaQ.data ?? 0)}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between border-t pt-1.5">
+                        <span className="font-semibold">(=) Producción Total (Inventario)</span>
+                        <span className="font-bold text-primary text-base">
+                          {fiadosDiaQ.isLoading
+                            ? "—"
+                            : formatCurrency(
+                                round2(
+                                  (editMode && liveCalc ? liveCalc.ventaReal : Number(selected.venta_real)) +
+                                    (fiadosDiaQ.data ?? 0)
+                                )
+                              )}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
                   <Accordion type="single" collapsible className="rounded-lg border px-3">
                     <AccordionItem value="gastos" className="border-b-0">
                       <AccordionTrigger className="text-sm">
