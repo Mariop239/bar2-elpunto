@@ -2,13 +2,26 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, type ReactNode } from "react";
 import { formatCurrency, round2, sanitizeDecimal } from "@/lib/utils";
-import { FileSpreadsheet, Eye, Pencil, Save, X, AlertCircle, CheckCircle2 } from "lucide-react";
+import {
+  FileSpreadsheet,
+  Eye,
+  Pencil,
+  Save,
+  X,
+  AlertCircle,
+  CheckCircle2,
+  Calculator,
+  Banknote,
+  Coins,
+  type LucideIcon,
+} from "lucide-react";
 import * as XLSX from "xlsx";
 import { useEmpleado } from "@/lib/empleado-store";
 import { toast } from "sonner";
@@ -564,8 +577,6 @@ function HistorialPage() {
               <TableRow>
                 <TableHead>Fecha</TableHead>
                 <TableHead>Estado</TableHead>
-                <TableHead className="text-right">Caja Inicial</TableHead>
-                <TableHead className="text-right">Egresos</TableHead>
                 <TableHead className="text-right">Total Arqueo</TableHead>
                 <TableHead className="text-right">Venta Real</TableHead>
                 <TableHead className="text-right">Acciones</TableHead>
@@ -584,8 +595,6 @@ function HistorialPage() {
                           Cerrado
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-right">{formatCurrency(Number(c.caja_inicial))}</TableCell>
-                      <TableCell className="text-right text-destructive">{formatCurrency(Number(c.total_egresos))}</TableCell>
                       <TableCell className="text-right">{formatCurrency(Number(c.total_arqueo))}</TableCell>
                       <TableCell className="text-right font-semibold text-success">{formatCurrency(Number(c.venta_real))}</TableCell>
                       <TableCell className="text-right">
@@ -611,8 +620,6 @@ function HistorialPage() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right text-muted-foreground">—</TableCell>
-                    <TableCell className="text-right text-destructive">{formatCurrency(row.egresos)}</TableCell>
-                    <TableCell className="text-right text-muted-foreground">—</TableCell>
                     <TableCell className="text-right text-muted-foreground italic">Pendiente</TableCell>
                     <TableCell className="text-right">
                       <Button
@@ -630,7 +637,7 @@ function HistorialPage() {
               })}
               {filas.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
                     Sin cierres ni actividad en el rango seleccionado
                   </TableCell>
                 </TableRow>
@@ -649,10 +656,10 @@ function HistorialPage() {
                 <SheetDescription>{formatFechaCorta(selected.fecha)}</SheetDescription>
               </SheetHeader>
 
-              <div className="mt-6 space-y-6">
-                <section className="space-y-2">
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Totales</h3>
-                  <div className="rounded-lg border divide-y">
+              <div className="mt-6 space-y-4">
+                {/* ===== Bloque 1 - Resumen Contable ===== */}
+                <Bloque title="Resumen Contable" icon={Calculator}>
+                  <div className="divide-y">
                     <EditableRow
                       label="Caja Inicial"
                       editing={editMode}
@@ -660,21 +667,28 @@ function HistorialPage() {
                       readValue={Number(selected.caja_inicial)}
                       onChange={(v) => setForm((f) => ({ ...f, cajaInicial: v }))}
                     />
-                    <Row label="Egresos Totales" value={formatCurrency(Number(selected.total_egresos))} valueClass="text-destructive" />
-                    <Row
+                    <Linea
+                      label="Egresos Totales"
+                      value={formatCurrency(Number(selected.total_egresos))}
+                      valueClass="text-destructive"
+                    />
+                    <Linea
                       label="Total Arqueo"
                       value={formatCurrency(editMode && liveCalc ? liveCalc.totalArqueo : Number(selected.total_arqueo))}
                       valueClass="font-semibold"
                     />
-                    <Row
+                    <Linea
+                      large
                       label="Venta Real del Día"
                       value={formatCurrency(editMode && liveCalc ? liveCalc.ventaReal : Number(selected.venta_real))}
-                      valueClass="font-bold text-success text-base"
+                      valueClass="font-bold text-success"
                     />
                   </div>
 
+                  <Separator />
+
                   {/* Producción Total del Día: Venta Real + Fiados entregados ese día */}
-                  <div className="rounded-lg border bg-primary/5 border-primary/20 p-3 space-y-1.5">
+                  <div className="rounded-lg bg-primary/5 border border-primary/20 p-3 space-y-1.5">
                     <p className="text-sm font-semibold text-primary">Producción Total del Día</p>
                     <p className="text-[11px] text-muted-foreground">Salida real de inventario (Venta limpia + Créditos)</p>
                     <div className="pt-1 space-y-1 text-sm">
@@ -740,18 +754,23 @@ function HistorialPage() {
                       </AccordionContent>
                     </AccordionItem>
                   </Accordion>
-                </section>
+                </Bloque>
 
-                <section className="space-y-2">
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Efectivo Físico</h3>
-                  <div className="rounded-lg border divide-y">
+                {/* ===== Bloque 2 - Desglose Físico (Efectivo) ===== */}
+                <Bloque title="Desglose Físico (Efectivo)" icon={Coins}>
+                  <div className="divide-y">
                     <EditableRow
+                      large
                       label="Total Billetes"
                       editing={editMode}
                       value={form.billetes}
                       readValue={Number(selected.billetes)}
                       onChange={(v) => setForm((f) => ({ ...f, billetes: v }))}
                     />
+                  </div>
+                  <Separator />
+                  <p className="text-xs font-medium text-muted-foreground">Denominaciones de monedas</p>
+                  <div className="divide-y">
                     {DENOMS.map((d) => (
                       <EditableRow
                         key={d.key}
@@ -763,11 +782,11 @@ function HistorialPage() {
                       />
                     ))}
                   </div>
-                </section>
+                </Bloque>
 
-                <section className="space-y-2">
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Bancos</h3>
-                  <div className="rounded-lg border divide-y">
+                {/* ===== Bloque 3 - Desglose Digital (Bancos) ===== */}
+                <Bloque title="Desglose Digital (Bancos)" icon={Banknote}>
+                  <div className="divide-y">
                     <EditableRow
                       label="Banco Pichincha"
                       editing={editMode}
@@ -783,10 +802,17 @@ function HistorialPage() {
                       onChange={(v) => setForm((f) => ({ ...f, bancoGuayaquil: v }))}
                     />
                   </div>
-                </section>
+                  <Separator />
+                  <Linea
+                    large
+                    label="Total Bancos"
+                    value={formatCurrency(editMode && liveCalc ? liveCalc.bancos : Number(selected.bancos))}
+                    valueClass="font-bold text-primary"
+                  />
+                </Bloque>
 
                 {isAdmin && (
-                  <div className="flex gap-2 pt-2">
+                  <div className="flex gap-2 pt-1">
                     {!editMode ? (
                       <Button className="w-full" onClick={() => setEditMode(true)}>
                         <Pencil className="h-4 w-4 mr-2" />
@@ -837,10 +863,10 @@ function HistorialPage() {
                 <SheetDescription>{formatFechaCorta(selectedPend.fecha)}</SheetDescription>
               </SheetHeader>
 
-              <div className="mt-6 space-y-6">
-                <section className="space-y-2">
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Totales</h3>
-                  <div className="rounded-lg border divide-y">
+              <div className="mt-6 space-y-4">
+                {/* ===== Bloque 1 - Resumen Contable ===== */}
+                <Bloque title="Resumen Contable" icon={Calculator}>
+                  <div className="divide-y">
                     <EditableRow
                       label="Caja Inicial"
                       editing
@@ -848,20 +874,21 @@ function HistorialPage() {
                       readValue={0}
                       onChange={(v) => setPendForm((f) => ({ ...f, cajaInicial: v }))}
                     />
-                    <Row
+                    <Linea
                       label="Egresos Totales"
                       value={formatCurrency(liveEgresosPend)}
                       valueClass="text-destructive"
                     />
-                    <Row
+                    <Linea
                       label="Total Arqueo"
                       value={formatCurrency(pendCalc?.totalArqueo ?? 0)}
                       valueClass="font-semibold"
                     />
-                    <Row
+                    <Linea
+                      large
                       label="Venta Real del Día"
                       value={formatCurrency(pendCalc?.ventaReal ?? 0)}
-                      valueClass="font-bold text-success text-base"
+                      valueClass="font-bold text-success"
                     />
                   </div>
 
@@ -947,18 +974,23 @@ function HistorialPage() {
                       </AccordionContent>
                     </AccordionItem>
                   </Accordion>
-                </section>
+                </Bloque>
 
-                <section className="space-y-2">
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Efectivo Físico</h3>
-                  <div className="rounded-lg border divide-y">
+                {/* ===== Bloque 2 - Desglose Físico (Efectivo) ===== */}
+                <Bloque title="Desglose Físico (Efectivo)" icon={Coins}>
+                  <div className="divide-y">
                     <EditableRow
+                      large
                       label="Total Billetes"
                       editing
                       value={pendForm.billetes}
                       readValue={0}
                       onChange={(v) => setPendForm((f) => ({ ...f, billetes: v }))}
                     />
+                  </div>
+                  <Separator />
+                  <p className="text-xs font-medium text-muted-foreground">Denominaciones de monedas</p>
+                  <div className="divide-y">
                     {DENOMS.map((d) => (
                       <EditableRow
                         key={d.key}
@@ -972,11 +1004,11 @@ function HistorialPage() {
                       />
                     ))}
                   </div>
-                </section>
+                </Bloque>
 
-                <section className="space-y-2">
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Bancos</h3>
-                  <div className="rounded-lg border divide-y">
+                {/* ===== Bloque 3 - Desglose Digital (Bancos) ===== */}
+                <Bloque title="Desglose Digital (Bancos)" icon={Banknote}>
+                  <div className="divide-y">
                     <EditableRow
                       label="Banco Pichincha"
                       editing
@@ -992,7 +1024,14 @@ function HistorialPage() {
                       onChange={(v) => setPendForm((f) => ({ ...f, bancoGuayaquil: v }))}
                     />
                   </div>
-                </section>
+                  <Separator />
+                  <Linea
+                    large
+                    label="Total Bancos"
+                    value={formatCurrency(pendCalc?.bancos ?? 0)}
+                    valueClass="font-bold text-primary"
+                  />
+                </Bloque>
 
 
                 <div className="flex gap-2 pt-2">
@@ -1023,11 +1062,33 @@ function HistorialPage() {
   );
 }
 
-function Row({ label, value, valueClass = "" }: { label: string; value: string; valueClass?: string }) {
+function Bloque({ title, icon: Icon, children }: { title: string; icon?: LucideIcon; children: ReactNode }) {
   return (
-    <div className="flex items-center justify-between px-4 py-3">
+    <section className="rounded-xl border bg-muted/30 p-4 space-y-3">
+      <div className="flex items-center gap-2">
+        {Icon ? <Icon className="h-4 w-4 text-muted-foreground" /> : null}
+        <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function Linea({
+  label,
+  value,
+  valueClass = "",
+  large = false,
+}: {
+  label: string;
+  value: ReactNode;
+  valueClass?: string;
+  large?: boolean;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3 px-1 py-2.5">
       <span className="text-sm text-muted-foreground">{label}</span>
-      <span className={`text-sm ${valueClass}`}>{value}</span>
+      <span className={`${large ? "text-lg" : "text-sm"} font-medium ${valueClass}`}>{value}</span>
     </div>
   );
 }
@@ -1038,15 +1099,17 @@ function EditableRow({
   value,
   readValue,
   onChange,
+  large = false,
 }: {
   label: string;
   editing: boolean;
   value: string;
   readValue: number;
   onChange: (v: string) => void;
+  large?: boolean;
 }) {
   return (
-    <div className="flex items-center justify-between gap-3 px-4 py-3">
+    <div className="flex items-center justify-between gap-3 px-1 py-2.5">
       <span className="text-sm text-muted-foreground">{label}</span>
       {editing ? (
         <Input
@@ -1058,7 +1121,7 @@ function EditableRow({
           className="h-9 w-32 text-right"
         />
       ) : (
-        <span className="text-sm font-medium">{formatCurrency(readValue)}</span>
+        <span className={`${large ? "text-lg" : "text-sm"} font-medium`}>{formatCurrency(readValue)}</span>
       )}
     </div>
   );
