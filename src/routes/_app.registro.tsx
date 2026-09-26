@@ -449,9 +449,34 @@ function CajaTab() {
                       {formatCurrency(Number(e.monto))}
                     </TableCell>
                     <TableCell>
-                      <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => delEgreso.mutate(e.id)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" disabled={delEgreso.isPending}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>¿Eliminar este gasto?</AlertDialogTitle>
+                            <AlertDialogDescription asChild>
+                              <div>
+                                Se eliminará {e.descripcion ? <span className="font-medium">"{e.descripcion}"</span> : "el gasto"} por{" "}
+                                <span className="font-medium text-destructive">{formatCurrency(Number(e.monto))}</span>.
+                                Esta acción no se puede deshacer.
+                              </div>
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => delEgreso.mutate(e.id)}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              Sí, eliminar
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </TableCell>
                   </TableRow>
                 ))}
