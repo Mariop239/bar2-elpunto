@@ -863,10 +863,10 @@ function HistorialPage() {
                 <SheetDescription>{formatFechaCorta(selectedPend.fecha)}</SheetDescription>
               </SheetHeader>
 
-              <div className="mt-6 space-y-6">
-                <section className="space-y-2">
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Totales</h3>
-                  <div className="rounded-lg border divide-y">
+              <div className="mt-6 space-y-4">
+                {/* ===== Bloque 1 - Resumen Contable ===== */}
+                <Bloque title="Resumen Contable" icon={Calculator}>
+                  <div className="divide-y">
                     <EditableRow
                       label="Caja Inicial"
                       editing
@@ -874,20 +874,21 @@ function HistorialPage() {
                       readValue={0}
                       onChange={(v) => setPendForm((f) => ({ ...f, cajaInicial: v }))}
                     />
-                    <Row
+                    <Linea
                       label="Egresos Totales"
                       value={formatCurrency(liveEgresosPend)}
                       valueClass="text-destructive"
                     />
-                    <Row
+                    <Linea
                       label="Total Arqueo"
                       value={formatCurrency(pendCalc?.totalArqueo ?? 0)}
                       valueClass="font-semibold"
                     />
-                    <Row
+                    <Linea
+                      large
                       label="Venta Real del Día"
                       value={formatCurrency(pendCalc?.ventaReal ?? 0)}
-                      valueClass="font-bold text-success text-base"
+                      valueClass="font-bold text-success"
                     />
                   </div>
 
@@ -973,18 +974,23 @@ function HistorialPage() {
                       </AccordionContent>
                     </AccordionItem>
                   </Accordion>
-                </section>
+                </Bloque>
 
-                <section className="space-y-2">
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Efectivo Físico</h3>
-                  <div className="rounded-lg border divide-y">
+                {/* ===== Bloque 2 - Desglose Físico (Efectivo) ===== */}
+                <Bloque title="Desglose Físico (Efectivo)" icon={Coins}>
+                  <div className="divide-y">
                     <EditableRow
+                      large
                       label="Total Billetes"
                       editing
                       value={pendForm.billetes}
                       readValue={0}
                       onChange={(v) => setPendForm((f) => ({ ...f, billetes: v }))}
                     />
+                  </div>
+                  <Separator />
+                  <p className="text-xs font-medium text-muted-foreground">Denominaciones de monedas</p>
+                  <div className="divide-y">
                     {DENOMS.map((d) => (
                       <EditableRow
                         key={d.key}
@@ -998,11 +1004,11 @@ function HistorialPage() {
                       />
                     ))}
                   </div>
-                </section>
+                </Bloque>
 
-                <section className="space-y-2">
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Bancos</h3>
-                  <div className="rounded-lg border divide-y">
+                {/* ===== Bloque 3 - Desglose Digital (Bancos) ===== */}
+                <Bloque title="Desglose Digital (Bancos)" icon={Banknote}>
+                  <div className="divide-y">
                     <EditableRow
                       label="Banco Pichincha"
                       editing
@@ -1018,7 +1024,14 @@ function HistorialPage() {
                       onChange={(v) => setPendForm((f) => ({ ...f, bancoGuayaquil: v }))}
                     />
                   </div>
-                </section>
+                  <Separator />
+                  <Linea
+                    large
+                    label="Total Bancos"
+                    value={formatCurrency(pendCalc?.bancos ?? 0)}
+                    valueClass="font-bold text-primary"
+                  />
+                </Bloque>
 
 
                 <div className="flex gap-2 pt-2">
