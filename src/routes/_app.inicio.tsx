@@ -156,6 +156,10 @@ function Dashboard() {
     ? Number(arqueo.data!.caja_inicial)
     : (cajaInicialQ.data ?? 0);
 
+  // Fiado Hoy y Producción Total (efectivo + fiado).
+  const fiadoHoy = fiadoHoyQ.data ?? 0;
+  const produccionTotal = hasArqueo ? round2((ventaReal ?? 0) + fiadoHoy) : null;
+
   return (
     <PageTransition>
     <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-5">
