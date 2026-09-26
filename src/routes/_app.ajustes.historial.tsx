@@ -7,9 +7,21 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, type ReactNode } from "react";
 import { formatCurrency, round2, sanitizeDecimal } from "@/lib/utils";
-import { FileSpreadsheet, Eye, Pencil, Save, X, AlertCircle, CheckCircle2 } from "lucide-react";
+import {
+  FileSpreadsheet,
+  Eye,
+  Pencil,
+  Save,
+  X,
+  AlertCircle,
+  CheckCircle2,
+  Calculator,
+  Banknote,
+  Coins,
+  type LucideIcon,
+} from "lucide-react";
 import * as XLSX from "xlsx";
 import { useEmpleado } from "@/lib/empleado-store";
 import { toast } from "sonner";
