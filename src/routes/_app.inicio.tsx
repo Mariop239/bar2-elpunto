@@ -211,7 +211,36 @@ function Dashboard() {
             <p className="text-sm font-medium text-muted-foreground italic">Pendiente de arqueo</p>
           </Card>
         )}
+
+        {/* Fiado Hoy: deudas pendientes creadas el día actual */}
+        <Card className="p-4 bg-orange-50 dark:bg-orange-950/30 border-orange-200 dark:border-orange-900/50 rounded-xl shadow-sm">
+          <CreditCard className="h-6 w-6 text-orange-600 dark:text-orange-400" />
+          <p className="mt-2 text-xs text-muted-foreground">Fiado Hoy</p>
+          <p className="text-2xl font-bold text-orange-700 dark:text-orange-300">
+            {fiadoHoyQ.isLoading ? "—" : formatCurrency(fiadoHoy)}
+          </p>
+          <p className="text-[11px] text-orange-600/80 dark:text-orange-400/80 mt-0.5">Pendiente de cobro</p>
+        </Card>
       </div>
+
+      {/* Producción Total: Venta Real (efectivo) + Fiado Hoy */}
+      <Card className="p-4 bg-primary/5 border-primary/20 rounded-xl shadow-sm">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <TrendingUp className="h-5 w-5 text-primary" />
+            <p className="text-sm font-semibold text-primary">Producción Total del Día</p>
+          </div>
+          <p className="text-[11px] text-muted-foreground">Efectivo + Fiado</p>
+        </div>
+        {produccionTotal !== null ? (
+          <p className="mt-2 text-3xl font-extrabold text-primary tracking-tight">{formatCurrency(produccionTotal)}</p>
+        ) : (
+          <>
+            <p className="mt-2 text-2xl font-bold text-muted-foreground">{formatCurrency(fiadoHoy)}</p>
+            <p className="text-[11px] text-muted-foreground italic">Pendiente de arqueo para total completo</p>
+          </>
+        )}
+      </Card>
 
       <div className="grid grid-cols-2 gap-3">
         <Button asChild size="lg" className="h-16 text-base">
