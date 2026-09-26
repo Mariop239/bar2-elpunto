@@ -191,6 +191,22 @@ function HistorialPage() {
     },
   });
 
+  // Deudas (fiados) del rango — para la columna Producción Total de la tabla
+  const deudasRangoQ = useQuery({
+    queryKey: ["deudas-rango", desde, hasta],
+    queryFn: async () => {
+      const start = new Date(`${desde}T00:00:00`).toISOString();
+      const end = new Date(`${hasta}T23:59:59.999`).toISOString();
+      const { data, error } = await supabase
+        .from("deudas")
+        .select("id, monto, created_at")
+        .gte("created_at", start)
+        .lte("created_at", end);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
   const cierres = cierresQ.data ?? [];
 
   // Construir mapa de actividad por fecha local.
