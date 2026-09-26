@@ -175,28 +175,28 @@ function Dashboard() {
         )}
       </div>
 
-      {/* Cards principales alineadas con el cierre de caja */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Card className="p-4 bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900/50 rounded-xl shadow-sm">
-          <Coins className="h-6 w-6 text-amber-600 dark:text-amber-400" />
-          <p className="mt-2 text-xs text-muted-foreground">Caja Inicial</p>
-          <p className="text-2xl font-bold text-amber-700 dark:text-amber-300">
-            {cajaInicialQ.isLoading || arqueo.isLoading ? "—" : formatCurrency(cajaInicial)}
+      {/* Cuadrícula Bento: destacadas (Producción Total + Venta Real) y secundarias */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        {/* Producción Total — destacada */}
+        <Card className="col-span-1 sm:col-span-2 p-4 bg-primary/5 border-primary/20 rounded-xl shadow-sm">
+          <div className="flex items-center gap-2">
+            <TrendingUp className="h-5 w-5 text-primary" />
+            <p className="text-sm font-semibold text-primary">Producción Total del Día</p>
+          </div>
+          <p className="mt-2 text-3xl font-extrabold text-primary tracking-tight">
+            {formatCurrency(produccionTotal ?? fiadoHoy)}
           </p>
         </Card>
-        <Card className="p-4 bg-destructive/10 border-destructive/20 rounded-xl shadow-sm">
-          <Receipt className="h-6 w-6 text-destructive" />
-          <p className="mt-2 text-xs text-muted-foreground">Gastos / Egresos</p>
-          <p className="text-2xl font-bold text-destructive">{isLoading || arqueo.isLoading ? "—" : formatCurrency(totalEgresos)}</p>
-        </Card>
+
+        {/* Venta Real — destacada */}
         {arqueo.isLoading ? (
-          <Card className="p-4 bg-muted/40 border-dashed rounded-xl shadow-sm">
+          <Card className="col-span-1 sm:col-span-2 p-4 bg-muted/40 border-dashed rounded-xl shadow-sm">
             <Banknote className="h-6 w-6 text-muted-foreground" />
             <p className="mt-2 text-xs text-muted-foreground">Venta Real del día</p>
             <p className="text-2xl font-bold text-muted-foreground">—</p>
           </Card>
         ) : ventaReal !== null ? (
-          <Card className="p-4 bg-success/10 border-success/30 rounded-xl shadow-sm ring-1 ring-success/20">
+          <Card className="col-span-1 sm:col-span-2 p-4 bg-success/10 border-success/30 rounded-xl shadow-sm ring-1 ring-success/20">
             <div className="flex items-center justify-between">
               <Banknote className="h-6 w-6 text-success" />
               <Badge className="bg-success/15 text-success hover:bg-success/15 border-success/30 text-[10px]">Cierre realizado</Badge>
@@ -205,42 +205,38 @@ function Dashboard() {
             <p className="text-3xl font-extrabold text-success tracking-tight">{formatCurrency(ventaReal)}</p>
           </Card>
         ) : (
-          <Card className="p-4 bg-muted/30 border-dashed border-muted-foreground/30 rounded-xl shadow-none">
+          <Card className="col-span-1 sm:col-span-2 p-4 bg-muted/30 border-dashed border-muted-foreground/30 rounded-xl shadow-none">
             <Banknote className="h-6 w-6 text-muted-foreground" />
             <p className="mt-2 text-xs text-muted-foreground">Venta Real del día</p>
             <p className="text-sm font-medium text-muted-foreground italic">Pendiente de arqueo</p>
           </Card>
         )}
 
-        {/* Fiado Hoy: deudas pendientes creadas el día actual */}
-        <Card className="p-4 bg-orange-50 dark:bg-orange-950/30 border-orange-200 dark:border-orange-900/50 rounded-xl shadow-sm">
+        {/* Caja Inicial — secundaria */}
+        <Card className="col-span-1 p-4 bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900/50 rounded-xl shadow-sm">
+          <Coins className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+          <p className="mt-2 text-xs text-muted-foreground">Caja Inicial</p>
+          <p className="text-2xl font-bold text-amber-700 dark:text-amber-300">
+            {cajaInicialQ.isLoading || arqueo.isLoading ? "—" : formatCurrency(cajaInicial)}
+          </p>
+        </Card>
+
+        {/* Fiado Hoy — secundaria (solo título y valor) */}
+        <Card className="col-span-1 p-4 bg-orange-50 dark:bg-orange-950/30 border-orange-200 dark:border-orange-900/50 rounded-xl shadow-sm">
           <CreditCard className="h-6 w-6 text-orange-600 dark:text-orange-400" />
           <p className="mt-2 text-xs text-muted-foreground">Fiado Hoy</p>
           <p className="text-2xl font-bold text-orange-700 dark:text-orange-300">
             {fiadoHoyQ.isLoading ? "—" : formatCurrency(fiadoHoy)}
           </p>
-          <p className="text-[11px] text-orange-600/80 dark:text-orange-400/80 mt-0.5">Pendiente de cobro</p>
+        </Card>
+
+        {/* Total Egresos — secundaria */}
+        <Card className="col-span-1 p-4 bg-destructive/10 border-destructive/20 rounded-xl shadow-sm">
+          <Receipt className="h-6 w-6 text-destructive" />
+          <p className="mt-2 text-xs text-muted-foreground">Total Egresos</p>
+          <p className="text-2xl font-bold text-destructive">{isLoading || arqueo.isLoading ? "—" : formatCurrency(totalEgresos)}</p>
         </Card>
       </div>
-
-      {/* Producción Total: Venta Real (efectivo) + Fiado Hoy */}
-      <Card className="p-4 bg-primary/5 border-primary/20 rounded-xl shadow-sm">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-primary" />
-            <p className="text-sm font-semibold text-primary">Producción Total del Día</p>
-          </div>
-          <p className="text-[11px] text-muted-foreground">Comida total despachada hoy (Venta limpia + Créditos)</p>
-        </div>
-        {produccionTotal !== null ? (
-          <p className="mt-2 text-3xl font-extrabold text-primary tracking-tight">{formatCurrency(produccionTotal)}</p>
-        ) : (
-          <>
-            <p className="mt-2 text-2xl font-bold text-muted-foreground">{formatCurrency(fiadoHoy)}</p>
-            <p className="text-[11px] text-muted-foreground italic">Pendiente de arqueo para total completo</p>
-          </>
-        )}
-      </Card>
 
       <div className="grid grid-cols-2 gap-3">
         <Button asChild size="lg" className="h-16 text-base">
